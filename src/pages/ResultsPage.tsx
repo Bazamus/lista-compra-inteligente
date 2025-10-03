@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Calendar, Users, Euro, TrendingDown, Sparkles,
   CheckCircle, Circle, Download, Share2, Home, ChevronDown,
-  ChevronUp, Package, Utensils
+  ChevronUp, Package, Utensils, Plus, Edit3, Trash2
 } from 'lucide-react';
+import ProductSearchModal from '../components/products/ProductSearchModal';
+import ProductEditModal from '../components/products/ProductEditModal';
 
 interface ResultsPageProps {
   resultado: {
@@ -31,8 +33,12 @@ interface ResultsPageProps {
 const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) => {
   const [expandedDay, setExpandedDay] = useState<string | null>('dia_1');
   const [checkedProducts, setCheckedProducts] = useState<Set<number>>(new Set());
+  const [productosLista, setProductosLista] = useState(resultado.productos);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [productoEditando, setProductoEditando] = useState<any>(null);
 
-  const { lista, productos, menus, presupuesto_estimado, recomendaciones } = resultado;
+  const { lista, menus, recomendaciones } = resultado;
 
   const toggleProduct = (productId: number) => {
     const newChecked = new Set(checkedProducts);
@@ -44,19 +50,66 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
     setCheckedProducts(newChecked);
   };
 
-  const groupedProducts = productos.reduce((acc: any, producto) => {
+  // Funciones para edición de productos
+  const handleAddProduct = (producto: any, cantidad: number) => {
+    const nuevoProducto = {
+      id_producto: producto.id_producto,
+      nombre: producto.nombre_producto,
+      cantidad: cantidad,
+      precio_unitario: producto.precio_por_unidad,
+      categoria: producto.subcategorias.categorias.nombre_categoria,
+      esencial: false
+    };
+    
+    setProductosLista(prev => [...prev, nuevoProducto]);
+  };
+
+  const handleEditProduct = (producto: any) => {
+    setProductoEditando(producto);
+    setShowEditModal(true);
+  };
+
+  const handleSaveProduct = (producto: any, nuevaCantidad: number) => {
+    setProductosLista(prev => 
+      prev.map(p => 
+        p.id_producto === producto.id_producto 
+          ? { ...p, cantidad: nuevaCantidad }
+          : p
+      )
+    );
+  };
+
+  const handleDeleteProduct = (productId: number) => {
+    setProductosLista(prev => prev.filter(p => p.id_producto !== productId));
+    setCheckedProducts(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(productId);
+      return newSet;
+    });
+  };
+
+  const getExistingProductIds = () => {
+    return new Set(productosLista.map(p => p.id_producto));
+  };
+
+  const groupedProducts = productosLista.reduce((acc: any, producto) => {
     const categoria = producto.categoria || 'Otros';
     if (!acc[categoria]) acc[categoria] = [];
     acc[categoria].push(producto);
     return acc;
   }, {});
 
-  const totalProductos = productos.length;
+  const totalProductos = productosLista.length;
   const productosComprados = checkedProducts.size;
   const progreso = totalProductos > 0 ? (productosComprados / totalProductos) * 100 : 0;
 
+  // Recalcular presupuesto basado en productos actuales
+  const presupuestoActual = productosLista.reduce((total, producto) => {
+    return total + (producto.precio_unitario * producto.cantidad);
+  }, 0);
+
   const presupuestoDisponible = lista.presupuesto_total || 0;
-  const ahorroEstimado = presupuestoDisponible - presupuesto_estimado;
+  const ahorroEstimado = presupuestoDisponible - presupuestoActual;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
@@ -127,7 +180,10 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Presupuesto</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{presupuesto_estimado.toFixed(2)}€</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{presupuestoActual.toFixed(2)}€</p>
+                <p className="text-xs text-gray-400">
+                  Disponible: {presupuestoDisponible.toFixed(2)}€
+                </p>
               </div>
             </div>
           </div>
@@ -177,6 +233,13 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                   Lista de compra
                 </h2>
                 <div className="flex gap-2">
+                  <button 
+                    onClick={() => setShowSearchModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Añadir
+                  </button>
                   <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   </button>
@@ -228,11 +291,13 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                       {items.map((producto: any) => (
                         <div
                           key={producto.id_producto}
-                          onClick={() => toggleProduct(producto.id_producto)}
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50
-                                   rounded-xl cursor-pointer transition-colors group"
+                                   rounded-xl transition-colors group"
                         >
-                          <div className="flex-shrink-0">
+                          <div 
+                            className="flex-shrink-0 cursor-pointer"
+                            onClick={() => toggleProduct(producto.id_producto)}
+                          >
                             {checkedProducts.has(producto.id_producto) ? (
                               <CheckCircle className="w-6 h-6 text-green-500" />
                             ) : (
@@ -240,7 +305,10 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                             )}
                           </div>
 
-                          <div className="flex-1 min-w-0">
+                          <div 
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => toggleProduct(producto.id_producto)}
+                          >
                             <p className={`font-medium ${
                               checkedProducts.has(producto.id_producto)
                                 ? 'line-through text-gray-400 dark:text-gray-500'
@@ -265,6 +333,29 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {producto.precio_unitario.toFixed(2)}€/ud
                             </p>
+                          </div>
+
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditProduct(producto);
+                              }}
+                              className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
+                              title="Editar producto"
+                            >
+                              <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteProduct(producto.id_producto);
+                              }}
+                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                              title="Eliminar producto"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -381,6 +472,25 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
           </button>
         </motion.div>
       </div>
+
+      {/* Modales */}
+      <ProductSearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onAddProduct={handleAddProduct}
+        existingProductIds={getExistingProductIds()}
+      />
+
+      <ProductEditModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setProductoEditando(null);
+        }}
+        producto={productoEditando}
+        onSave={handleSaveProduct}
+        onDelete={handleDeleteProduct}
+      />
     </div>
   );
 };

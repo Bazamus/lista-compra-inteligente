@@ -101,13 +101,46 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      let errorMessage = `Error ${response.status}: ${response.statusText}`;
+      let errorDetails = null;
+
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+        errorDetails = errorData.detalle || errorData.tipo || null;
+      } catch (jsonError) {
+        // Si no es JSON válido, intentar leer como texto
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorDetails = errorText.substring(0, 200); // Limitar a 200 caracteres
+          }
+        } catch (textError) {
+          console.error('No se pudo leer el cuerpo del error:', textError);
+        }
+      }
+
+      const fullError = errorDetails
+        ? `${errorMessage}\nDetalles: ${errorDetails}`
+        : errorMessage;
+
+      console.error(`❌ Error en API request (${endpoint}):`, {
+        status: response.status,
+        statusText: response.statusText,
+        mensaje: errorMessage,
+        detalles: errorDetails
+      });
+
+      throw new Error(fullError);
     }
 
     return await response.json();
   } catch (error) {
-    console.error(`Error en API request (${endpoint}):`, error);
+    if (error instanceof Error) {
+      console.error(`Error en API request (${endpoint}):`, error.message);
+    } else {
+      console.error(`Error en API request (${endpoint}):`, error);
+    }
     throw error;
   }
 }
