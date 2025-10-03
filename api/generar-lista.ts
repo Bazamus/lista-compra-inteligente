@@ -138,7 +138,16 @@ INSTRUCCIONES:
     console.log('📊 Parseando respuesta JSON...');
     let listaGenerada;
     try {
-      listaGenerada = JSON.parse(respuestaIA);
+      // Extraer JSON del markdown si está envuelto en ```json
+      let jsonString = respuestaIA;
+      if (jsonString.includes('```json')) {
+        const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          jsonString = jsonMatch[1].trim();
+        }
+      }
+      
+      listaGenerada = JSON.parse(jsonString);
     } catch (parseError: any) {
       console.error('❌ Error parseando respuesta de IA:', parseError);
       console.error('Respuesta recibida:', respuestaIA);
