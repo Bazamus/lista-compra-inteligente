@@ -1,0 +1,222 @@
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+
+// Configuración de Supabase
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://hnnjfqokgbhnydkfuhxy.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Configurar CORS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  try {
+    const { method, query } = req;
+
+    switch (method) {
+      case 'GET':
+        return await handleGetListas(req, res);
+      case 'POST':
+        return await handleCreateLista(req, res);
+      case 'PUT':
+        return await handleUpdateLista(req, res);
+      case 'DELETE':
+        return await handleDeleteLista(req, res);
+      default:
+        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        res.status(405).json({ error: 'Método no permitido' });
+    }
+  } catch (error) {
+    console.error('Error en API listas:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+}
+
+// Obtener listas de compra
+async function handleGetListas(req: VercelRequest, res: VercelResponse) {
+  const { lista_id, incluir_items = 'false' } = req.query;
+
+  try {
+    if (lista_id) {
+      // Obtener lista específica
+      let query = supabase
+        .from('listas_compra')
+        .select('*')
+        .eq('id_lista', lista_id)
+        .single();
+
+      const { data: lista, error } = await query;
+
+      if (error) {
+        console.error('Error obteniendo lista:', error);
+        return res.status(400).json({ error: error.message });
+      }
+
+      if (!lista) {
+        return res.status(404).json({ error: 'Lista no encontrada' });
+      }
+
+      // Obtener items si se solicita
+      let items = [];
+      if (incluir_items === 'true') {
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('items_lista')
+          .select(`
+            *,
+            productos!inner(
+              nombre_producto,
+              formato_venta,
+              unidad_medida,
+              imagen_url,
+              subcategorias!inner(
+                nombre_subcategoria,
+                categorias!inner(
+                  nombre_categoria
+                )
+              )
+            )
+          `)
+          .eq('id_lista', lista_id);
+
+        if (!itemsError) {
+          items = itemsData || [];
+        }
+      }
+
+      res.status(200).json({
+        lista,
+        items: incluir_items === 'true' ? items : undefined
+      });
+
+    } else {
+      // Obtener todas las listas
+      const { data: listas, error } = await supabase
+        .from('listas_compra')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error obteniendo listas:', error);
+        return res.status(400).json({ error: error.message });
+      }
+
+      res.status(200).json({
+        listas: listas || []
+      });
+    }
+
+  } catch (error) {
+    console.error('Error en handleGetListas:', error);
+    res.status(500).json({ error: 'Error al obtener listas' });
+  }
+}
+
+// Crear nueva lista
+async function handleCreateLista(req: VercelRequest, res: VercelResponse) {
+  const {
+    nombre_lista,
+    descripcion,
+    num_personas,
+    dias_duracion,
+    presupuesto_total,
+    tipo_comidas,
+    productos_basicos,
+    productos_adicionales
+  } = req.body;
+
+  try {
+    const { data: lista, error } = await supabase
+      .from('listas_compra')
+      .insert({
+        nombre_lista,
+        descripcion,
+        num_personas,
+        dias_duracion,
+        presupuesto_total,
+        tipo_comidas,
+        productos_basicos,
+        productos_adicionales,
+        presupuesto_usado: 0,
+        completada: false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creando lista:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(201).json({ lista });
+
+  } catch (error) {
+    console.error('Error en handleCreateLista:', error);
+    res.status(500).json({ error: 'Error al crear lista' });
+  }
+}
+
+// Actualizar lista
+async function handleUpdateLista(req: VercelRequest, res: VercelResponse) {
+  const { lista_id } = req.query;
+  const updates = req.body;
+
+  if (!lista_id) {
+    return res.status(400).json({ error: 'ID de lista requerido' });
+  }
+
+  try {
+    const { data: lista, error } = await supabase
+      .from('listas_compra')
+      .update(updates)
+      .eq('id_lista', lista_id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error actualizando lista:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(200).json({ lista });
+
+  } catch (error) {
+    console.error('Error en handleUpdateLista:', error);
+    res.status(500).json({ error: 'Error al actualizar lista' });
+  }
+}
+
+// Eliminar lista
+async function handleDeleteLista(req: VercelRequest, res: VercelResponse) {
+  const { lista_id } = req.query;
+
+  if (!lista_id) {
+    return res.status(400).json({ error: 'ID de lista requerido' });
+  }
+
+  try {
+    const { error } = await supabase
+      .from('listas_compra')
+      .delete()
+      .eq('id_lista', lista_id);
+
+    if (error) {
+      console.error('Error eliminando lista:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(200).json({ message: 'Lista eliminada correctamente' });
+
+  } catch (error) {
+    console.error('Error en handleDeleteLista:', error);
+    res.status(500).json({ error: 'Error al eliminar lista' });
+  }
+}
