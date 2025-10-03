@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Calendar, Users, Euro, TrendingDown, Sparkles,
   CheckCircle, Circle, Download, Share2, Home, ChevronDown,
-  ChevronUp, Package, Utensils, Clock
+  ChevronUp, Package, Utensils
 } from 'lucide-react';
 
 interface ResultsPageProps {
