@@ -54,7 +54,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Verificar configuración de OpenAI
+    if (!openaiKey) {
+      console.error('⚠️ VITE_OPENAI_API_KEY no está configurada');
+      return res.status(500).json({ error: 'OpenAI API key no configurada. Configura VITE_OPENAI_API_KEY en las variables de entorno de Vercel.' });
+    }
+
+    console.log('✅ Parámetros recibidos:', params);
+
     // 1. Obtener productos disponibles de la base de datos
+    console.log('📦 Consultando productos en Supabase...');
     const { data: productos, error: productosError } = await supabase
       .from('productos')
       .select(`
@@ -76,14 +85,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .order('precio_por_unidad', { ascending: true });
 
     if (productosError) {
-      console.error('Error obteniendo productos:', productosError);
-      return res.status(500).json({ error: 'Error al obtener productos de la base de datos' });
+      console.error('❌ Error obteniendo productos:', productosError);
+      return res.status(500).json({
+        error: 'Error al obtener productos de la base de datos',
+        detalle: productosError.message
+      });
     }
 
+    console.log(`✅ ${productos?.length || 0} productos obtenidos`);
+
     // 2. Generar prompt para OpenAI
+    console.log('📝 Generando prompt para OpenAI...');
     const prompt = crearPromptGeneracionLista(params, productos || []);
 
     // 3. Llamar a OpenAI para generar la lista
+    console.log('🤖 Llamando a OpenAI API...');
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -109,22 +125,31 @@ INSTRUCCIONES:
       max_tokens: 2000,
     });
 
+    console.log('✅ Respuesta recibida de OpenAI');
+
     const respuestaIA = completion.choices[0]?.message?.content;
 
     if (!respuestaIA) {
+      console.error('❌ No se obtuvo contenido de OpenAI');
       return res.status(500).json({ error: 'No se pudo generar la respuesta de IA' });
     }
 
     // 4. Procesar respuesta de OpenAI
+    console.log('📊 Parseando respuesta JSON...');
     let listaGenerada;
     try {
       listaGenerada = JSON.parse(respuestaIA);
-    } catch (parseError) {
-      console.error('Error parseando respuesta de IA:', parseError);
-      return res.status(500).json({ error: 'Error procesando respuesta de IA' });
+    } catch (parseError: any) {
+      console.error('❌ Error parseando respuesta de IA:', parseError);
+      console.error('Respuesta recibida:', respuestaIA);
+      return res.status(500).json({
+        error: 'Error procesando respuesta de IA',
+        detalle: parseError.message
+      });
     }
 
     // 5. Guardar lista en base de datos
+    console.log('💾 Guardando lista en base de datos...');
     const { data: listaGuardada, error: guardarError } = await supabase
       .from('listas_compra')
       .insert({
@@ -143,9 +168,14 @@ INSTRUCCIONES:
       .single();
 
     if (guardarError) {
-      console.error('Error guardando lista:', guardarError);
-      return res.status(500).json({ error: 'Error al guardar la lista' });
+      console.error('❌ Error guardando lista:', guardarError);
+      return res.status(500).json({
+        error: 'Error al guardar la lista',
+        detalle: guardarError.message
+      });
     }
+
+    console.log('✅ Lista guardada con ID:', listaGuardada?.id_lista);
 
     // 6. Guardar items de la lista
     if (listaGenerada.productos && listaGuardada) {
@@ -177,9 +207,13 @@ INSTRUCCIONES:
       recomendaciones: listaGenerada.recomendaciones || []
     });
 
-  } catch (error) {
-    console.error('Error en generación de lista:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+  } catch (error: any) {
+    console.error('❌ Error en generación de lista:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      detalle: error.message || String(error),
+      tipo: error.name || 'Error desconocido'
+    });
   }
 }
 
