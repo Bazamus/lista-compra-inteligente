@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Calendar, Users, Euro, TrendingDown, Sparkles,
   CheckCircle, Circle, Download, Share2, Home, ChevronDown,
-  ChevronUp, Package, Utensils, Plus, Edit3, Trash2
+  ChevronUp, Package, Utensils, Plus, Edit3, Trash2, Save, Check
 } from 'lucide-react';
 import ProductSearchModal from '../components/products/ProductSearchModal';
 import ProductEditModal from '../components/products/ProductEditModal';
+import { useListHistory } from '../hooks/useListHistory';
+import { exportToPDF } from '../utils/exportPDF';
+import { exportToExcel } from '../utils/exportExcel';
 
 interface ResultsPageProps {
   resultado: {
@@ -37,8 +40,81 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [productoEditando, setProductoEditando] = useState<any>(null);
+  const [listaSaved, setListaSaved] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const { lista, menus, recomendaciones } = resultado;
+  const { saveList } = useListHistory();
+
+  // Guardar lista automáticamente al cargar la página
+  useEffect(() => {
+    try {
+      saveList(resultado);
+      setListaSaved(true);
+      setTimeout(() => setListaSaved(false), 3000);
+    } catch (error) {
+      console.error('Error al guardar lista automáticamente:', error);
+    }
+  }, []); // Solo ejecutar una vez al montar
+
+  // Cerrar menú de exportación al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showExportMenu && !target.closest('.relative')) {
+        setShowExportMenu(false);
+      }
+    };
+
+    if (showExportMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showExportMenu]);
+
+  const handleSaveList = () => {
+    try {
+      // Actualizar resultado con productos actuales
+      const resultadoActualizado = {
+        ...resultado,
+        productos: productosLista,
+      };
+      saveList(resultadoActualizado);
+      setListaSaved(true);
+      setTimeout(() => setListaSaved(false), 3000);
+    } catch (error) {
+      console.error('Error al guardar lista:', error);
+      alert('No se pudo guardar la lista');
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const datosExportar = {
+        ...resultado,
+        productos: productosLista,
+      };
+      exportToPDF(datosExportar);
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error('Error al exportar PDF:', error);
+      alert('No se pudo exportar a PDF');
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const datosExportar = {
+        ...resultado,
+        productos: productosLista,
+      };
+      exportToExcel(datosExportar);
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error('Error al exportar Excel:', error);
+      alert('No se pudo exportar a Excel');
+    }
+  };
 
   const toggleProduct = (productId: number) => {
     const newChecked = new Set(checkedProducts);
@@ -233,16 +309,72 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                   Lista de compra
                 </h2>
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => setShowSearchModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Añadir
                   </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                    <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <button
+                    onClick={handleSaveList}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                      listaSaved
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                    title="Guardar lista"
+                  >
+                    {listaSaved ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span className="text-sm font-medium">Guardada</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Guardar</span>
+                      </>
+                    )}
                   </button>
+
+                  {/* Menú de exportación */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      title="Exportar lista"
+                    >
+                      <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Exportar</span>
+                    </button>
+
+                    {showExportMenu && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10">
+                        <button
+                          onClick={handleExportPDF}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-t-lg"
+                        >
+                          <Download className="w-4 h-4 text-red-500" />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">Exportar PDF</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Lista completa en PDF</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={handleExportExcel}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-b-lg border-t border-gray-200 dark:border-gray-700"
+                        >
+                          <Download className="w-4 h-4 text-green-500" />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">Exportar Excel</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Hoja de cálculo editable</p>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   </button>

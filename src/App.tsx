@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { AppProvider } from './contexts/AppContext';
 import HomePage from './pages/HomePage';
 import ResultsPage from './pages/ResultsPage';
+import HistoryPage from './pages/HistoryPage';
 import TestAPI from './components/TestAPI';
 import ConversationalForm from './components/forms/ConversationalForm';
 import type { FormData } from './types/form.types';
+import type { SavedList } from './hooks/useListHistory';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'form' | 'results'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'form' | 'results' | 'history'>('home');
   const [formData, setFormData] = useState<FormData | null>(null);
   const [resultadoIA, setResultadoIA] = useState<any>(null);
 
@@ -39,6 +41,28 @@ function App() {
     setResultadoIA(null);
   };
 
+  const handleViewHistory = () => {
+    setCurrentView('history');
+  };
+
+  const handleViewList = (lista: SavedList) => {
+    // Convertir SavedList a formato de resultado
+    const resultado = {
+      lista: {
+        dias_duracion: lista.dias,
+        num_personas: lista.personas,
+        presupuesto_total: lista.presupuesto_estimado,
+        nombre_lista: lista.nombre,
+      },
+      productos: lista.productos,
+      menus: lista.menus,
+      presupuesto_estimado: lista.presupuesto_estimado,
+      recomendaciones: lista.recomendaciones,
+    };
+    setResultadoIA(resultado);
+    setCurrentView('results');
+  };
+
   const renderCurrentView = () => {
     if (showTestAPI) {
       return <TestAPI />;
@@ -46,8 +70,11 @@ function App() {
 
     switch (currentView) {
       case 'home':
-        return <HomePage onStartForm={handleStartForm} />;
-      
+        return <HomePage onStartForm={handleStartForm} onViewHistory={handleViewHistory} />;
+
+      case 'history':
+        return <HistoryPage onViewList={handleViewList} onBackToHome={handleBackToHome} />;
+
       case 'form':
         return (
           <ConversationalForm

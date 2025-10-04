@@ -1,12 +1,16 @@
-import { ArrowRight, Sparkles, Clock, PiggyBank } from 'lucide-react';
+import { ArrowRight, Sparkles, Clock, PiggyBank, History } from 'lucide-react';
 import Header from '../components/common/Header';
 import Button from '../components/common/Button';
+import { useListHistory } from '../hooks/useListHistory';
 
 interface HomePageProps {
   onStartForm: () => void;
+  onViewHistory?: () => void;
 }
 
-export default function HomePage({ onStartForm }: HomePageProps) {
+export default function HomePage({ onStartForm, onViewHistory }: HomePageProps) {
+  const { savedLists } = useListHistory();
+
   const features = [
     {
       icon: Sparkles,
@@ -45,15 +49,29 @@ export default function HomePage({ onStartForm }: HomePageProps) {
             y listas de compra optimizadas para tu familia y presupuesto.
           </p>
 
-          <Button
-            variant="primary"
-            size="large"
-            icon={ArrowRight}
-            onClick={handleStartPlanning}
-            className="text-lg px-8 py-4"
-          >
-            Comenzar Planificación
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button
+              variant="primary"
+              size="large"
+              icon={ArrowRight}
+              onClick={handleStartPlanning}
+              className="text-lg px-8 py-4"
+            >
+              Comenzar Planificación
+            </Button>
+
+            {savedLists.length > 0 && onViewHistory && (
+              <Button
+                variant="secondary"
+                size="large"
+                icon={History}
+                onClick={onViewHistory}
+                className="text-lg px-8 py-4"
+              >
+                Mis Listas ({savedLists.length})
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Features Section */}
