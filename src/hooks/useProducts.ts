@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import type { CartProduct, ProductFilters, ProductsResponse, Category } from '../types/cart.types';
+import type { CartProduct, ProductFilters, Category } from '../types/cart.types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
