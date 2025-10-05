@@ -720,11 +720,239 @@ VITE_OPENAI_API_KEY=
 - [ ] 7.3 Compartir lista mediante enlace (Supabase + URL corta)
 - [ ] 7.4 Comparación de precios entre productos similares
 - [ ] 7.5 Sugerencias de productos en oferta
+- [ ] **7.6 Modo de Compra Manual - Catálogo de Productos** 🔄 EN PROGRESO
 - [ ] FASE 8: Testing automatizado con Jest
 - [ ] FASE 9: Monitoreo, analytics y documentación usuario
 
 ---
 
-*📅 Última sesión: 4 octubre 2025*
-*⏰ Duración total acumulada: 10.5 horas*
-*✅ Estado: FASE 7.1 y 7.2 completadas - Historial y Exportación funcionales*
+## 🛒 SESIÓN DE TRABAJO - 5 OCTUBRE 2025
+
+### FASE 7.6: MODO DE COMPRA MANUAL - CATÁLOGO DE PRODUCTOS - 🔄 EN PROGRESO (45%)
+
+**Tiempo invertido:** ~4 horas
+**Estado:** Infraestructura base y componentes core completados
+
+#### Objetivo:
+Implementar un sistema completo de compra manual tipo tienda online que permita al usuario crear listas seleccionando productos del catálogo de Mercadona de forma visual e intuitiva.
+
+#### Tareas realizadas (45% completado):
+
+##### ✅ **Infraestructura Base (100% completada):**
+- [x] Tipos TypeScript completos para carrito (`cart.types.ts`)
+  - Interfaces: `CartProduct`, `CartItem`, `Cart`, `ProductFilters`, `Category`, `Subcategory`
+  - Tipos para paginación y respuestas de API
+
+- [x] Hook `useCart` para gestión del carrito
+  - Persistencia en localStorage
+  - Funciones: `addProduct`, `removeProduct`, `updateQuantity`, `incrementQuantity`, `decrementQuantity`, `clearCart`
+  - Cálculo automático de totales (items y precio)
+  - Verificación de productos en carrito
+
+- [x] Hook `useProducts` para búsqueda y filtros
+  - Integración con API `/productos`
+  - Búsqueda debounced en tiempo real
+  - Filtros por categoría, subcategoría y rango de precio
+  - Paginación (24 productos por página)
+  - Ordenamiento (precio, nombre - asc/desc)
+  - Carga de categorías desde API
+
+##### ✅ **Header y Navegación (100% completada):**
+- [x] Header actualizado con navegación completa
+  - 4 enlaces: Inicio | Generar con IA | Explorar Productos | Historial
+  - Menú hamburguesa funcional para móvil
+  - Indicador de vista activa
+  - Animaciones Framer Motion
+  - Dark mode completo
+  - Sticky header con z-index optimizado
+
+##### ✅ **Componentes de Catálogo (75% completados):**
+- [x] `ProductCard` con funcionalidad completa
+  - Imagen con lazy loading y placeholder si falla
+  - Badge de categoría
+  - Botón info para ver detalles
+  - Indicador visual si está en carrito
+  - Botones +/- para ajustar cantidad
+  - Botón "Añadir" cuando no está en carrito
+  - Animaciones hover y transiciones
+  - Responsive design móvil/desktop
+
+- [x] `ProductFilters` con filtros avanzados
+  - Búsqueda por nombre (debounced 500ms)
+  - Dropdown categorías con carga dinámica
+  - Dropdown subcategorías (actualiza según categoría seleccionada)
+  - Input precio mínimo y máximo
+  - Botón toggle para mostrar/ocultar filtros
+  - Contador de filtros activos
+  - Botón "Limpiar filtros"
+  - Responsive con grid adaptable
+
+- [x] `CartWidget` flotante
+  - Contador de productos en badge
+  - Total acumulado en grande
+  - Botón "Ver Carrito"
+  - Posicionamiento responsive (bottom full-width móvil, bottom-right desktop)
+  - Animación de entrada/salida
+  - Barra de progreso animada
+  - Solo visible cuando hay productos
+
+#### Archivos creados/modificados:
+```
+📁 lista-compra-inteligente/src/
+├── 📁 types/
+│   └── 📄 cart.types.ts - Tipos TypeScript completos (nuevo)
+├── 📁 hooks/
+│   ├── 📄 useCart.ts - Gestión carrito con localStorage (nuevo)
+│   └── 📄 useProducts.ts - Búsqueda y filtros de productos (nuevo)
+├── 📁 components/
+│   ├── 📁 common/
+│   │   └── 📄 Header.tsx - Actualizado con navegación completa
+│   └── 📁 catalog/ (nuevo directorio)
+│       ├── 📄 ProductCard.tsx - Tarjeta de producto (nuevo)
+│       ├── 📄 ProductFilters.tsx - Panel de filtros (nuevo)
+│       └── 📄 CartWidget.tsx - Widget flotante carrito (nuevo)
+```
+
+#### Características técnicas implementadas:
+
+✅ **Sistema de Carrito:**
+- Persistencia automática en localStorage
+- Cálculo de totales en tiempo real
+- Prevención de productos duplicados
+- Validación de cantidades (auto-elimina si llega a 0)
+- Verificación de productos en carrito para UI
+
+✅ **Sistema de Búsqueda y Filtros:**
+- Debounce de 500ms para búsqueda
+- Cascada categoría → subcategoría
+- Filtros de precio con inputs numéricos
+- Integración completa con API existente
+- Transformación de datos para compatibilidad
+
+✅ **UX/UI Optimizada:**
+- Lazy loading de imágenes
+- Placeholder cuando imagen falla
+- Animaciones Framer Motion en todos los componentes
+- Feedback visual inmediato (hover, active states)
+- Dark mode completo en todos los nuevos componentes
+- Responsive design móvil/tablet/desktop
+
+✅ **Performance:**
+- Paginación de 24 productos
+- Lazy loading de imágenes
+- Debounced search
+- Memoización en hooks con useCallback
+- Evita re-renders innecesarios
+
+---
+
+#### 🔄 Pendiente para próxima sesión (55% restante):
+
+##### ⏳ **Componentes Faltantes:**
+- [ ] `CartModal` - Modal resumen del carrito con:
+  - Lista de productos seleccionados
+  - Controles +/- para cantidades
+  - Botón eliminar producto
+  - Resumen total (items + precio)
+  - Input nombre de lista personalizado
+  - Botón "Generar lista" → navegación a ManualListResults
+
+- [ ] `ProductDetailModal` - Modal detalles del producto:
+  - Imagen grande del producto
+  - Toda la información de BD (precio, formato, unidad medida)
+  - Descripción y categoría/subcategoría
+  - Selector de cantidad
+  - Botón "Añadir al carrito"
+  - Link a URL de Mercadona (si existe)
+
+- [ ] `CatalogPage` - Página principal catálogo:
+  - Integración de ProductFilters
+  - Grid de ProductCard (responsive 1/2/3/4 columnas)
+  - Paginación o scroll infinito
+  - Loading states
+  - Empty state cuando no hay productos
+  - CartWidget integrado
+  - Gestión de estado global con useCart
+
+- [ ] `ManualListResults` - Página resultados lista manual:
+  - Similar a ResultsPage pero sin menús
+  - Productos agrupados por categoría
+  - Estadísticas (total productos, precio total)
+  - Botones: Guardar, Exportar PDF/Excel, Volver
+  - Edición de cantidades inline
+  - Integración con useListHistory
+
+##### ⏳ **Integraciones Pendientes:**
+
+- [ ] Actualizar `useListHistory`:
+  - Añadir campo `tipo: 'IA' | 'Manual'` a SavedList
+  - Guardar origen de la lista
+  - Filtrar por tipo en HistoryPage
+
+- [ ] Actualizar `ListHistoryCard`:
+  - Badge visual "IA" o "Manual"
+  - Colores diferenciados (azul IA, verde Manual)
+  - Iconos distintivos
+
+- [ ] Actualizar `App.tsx`:
+  - Nueva vista 'catalog' en routing
+  - Contexto global del carrito (Provider)
+  - Navegación Header → CatalogPage
+  - Gestión de estado compartido
+
+- [ ] Actualizar `HomePage`:
+  - Botón "Explorar Productos" destacado
+  - Sección explicativa del modo manual
+  - Comparación IA vs Manual
+
+##### ⏳ **Testing y Refinamiento:**
+- [ ] Probar flujo completo: Catálogo → Carrito → Generar Lista → Guardar
+- [ ] Verificar responsive en móvil/tablet/desktop
+- [ ] Optimizar carga de imágenes
+- [ ] Testing de filtros y búsqueda
+- [ ] Validación de edge cases (carrito vacío, sin resultados, etc.)
+
+---
+
+#### 📊 Estimación de tiempo restante:
+
+| Tarea | Tiempo Estimado |
+|-------|----------------|
+| CartModal | 1.5h |
+| ProductDetailModal | 1h |
+| CatalogPage | 1.5h |
+| ManualListResults | 1.5h |
+| Integraciones (useListHistory, badges, App.tsx) | 1.5h |
+| Testing y refinamiento | 1h |
+| **TOTAL RESTANTE** | **~8 horas** |
+
+---
+
+#### 🎯 Próxima sesión - Plan de trabajo:
+
+1. **Crear CartModal** (modal resumen carrito)
+2. **Crear ProductDetailModal** (detalles completos)
+3. **Crear CatalogPage** (página principal)
+4. **Crear ManualListResults** (resultados lista manual)
+5. **Actualizar useListHistory** (campo tipo IA/Manual)
+6. **Actualizar ListHistoryCard** (badges)
+7. **Integrar todo en App.tsx** (routing + contexto)
+8. **Testing completo** del flujo
+
+---
+
+#### 💡 Decisiones de diseño tomadas:
+
+- **Almacenamiento:** localStorage (migración a Supabase en futuro)
+- **Paginación:** 24 productos por página (grid 4x6 desktop)
+- **Imágenes:** URLs de Mercadona con fallback a icono
+- **Carrito:** Footer flotante en móvil, esquina inferior derecha en desktop
+- **Filtros:** Panel colapsable con toggle
+- **Búsqueda:** Debounce de 500ms
+- **Navegación:** Header sticky con 4 enlaces principales
+
+---
+
+*📅 Última sesión: 5 octubre 2025*
+*⏰ Duración total acumulada: 14.5 horas*
+*✅ Estado: FASE 7.6 - 45% completada (infraestructura y componentes core listos)*
