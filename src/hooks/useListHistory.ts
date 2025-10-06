@@ -24,6 +24,7 @@ export interface SavedList {
   recomendaciones: string[];
   dias: number;
   personas: number;
+  tipo?: 'IA' | 'Manual'; // Tipo de lista: generada con IA o creada manualmente
 }
 
 export const useListHistory = () => {
@@ -50,14 +51,15 @@ export const useListHistory = () => {
     try {
       const newList: SavedList = {
         id: `list_${Date.now()}`,
-        nombre: nombre || `Lista del ${new Date().toLocaleDateString('es-ES')}`,
+        nombre: nombre || resultado.lista?.nombre || `Lista del ${new Date().toLocaleDateString('es-ES')}`,
         fecha: new Date().toISOString(),
         productos: resultado.productos,
         menus: resultado.menus,
         presupuesto_estimado: resultado.presupuesto_estimado,
         recomendaciones: resultado.recomendaciones,
-        dias: resultado.lista?.dias || Object.keys(resultado.menus).length,
-        personas: resultado.lista?.num_personas || 1,
+        dias: resultado.lista?.dias || Object.keys(resultado.menus || {}).length || 7,
+        personas: resultado.lista?.num_personas || resultado.lista?.personas || 1,
+        tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual'),
       };
 
       let lists = [...savedLists];

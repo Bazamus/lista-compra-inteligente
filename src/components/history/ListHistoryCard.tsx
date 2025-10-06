@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ShoppingCart, Calendar, Users, Euro, Trash2, Eye, Edit3, Check, X
+  ShoppingCart, Calendar, Users, Euro, Trash2, Eye, Edit3, Check, X, Sparkles, Package
 } from 'lucide-react';
 import type { SavedList } from '../../hooks/useListHistory';
 
@@ -47,6 +47,22 @@ const ListHistoryCard: React.FC<ListHistoryCardProps> = ({
     year: 'numeric'
   });
 
+  // Determinar tipo de lista y colores del badge
+  const tipoLista = lista.tipo || (Object.keys(lista.menus || {}).length > 0 ? 'IA' : 'Manual');
+  const badgeConfig = tipoLista === 'IA'
+    ? {
+        color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+        icon: Sparkles,
+        label: 'IA'
+      }
+    : {
+        color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+        icon: Package,
+        label: 'Manual'
+      };
+
+  const BadgeIcon = badgeConfig.icon;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -54,8 +70,16 @@ const ListHistoryCard: React.FC<ListHistoryCardProps> = ({
       exit={{ opacity: 0, scale: 0.95 }}
       className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6 relative overflow-hidden"
     >
+      {/* Badge tipo de lista */}
+      <div className="absolute top-4 right-4">
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${badgeConfig.color}`}>
+          <BadgeIcon className="w-3.5 h-3.5" />
+          <span>{badgeConfig.label}</span>
+        </div>
+      </div>
+
       {/* Header con nombre editable */}
-      <div className="mb-4">
+      <div className="mb-4 pr-20">
         {isEditing ? (
           <div className="flex items-center gap-2">
             <input

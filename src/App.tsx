@@ -1,23 +1,53 @@
 import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
+import Header from './components/common/Header';
 import HomePage from './pages/HomePage';
 import ResultsPage from './pages/ResultsPage';
 import HistoryPage from './pages/HistoryPage';
+import CatalogPage from './pages/CatalogPage';
+import ManualListResults from './pages/ManualListResults';
 import TestAPI from './components/TestAPI';
 import ConversationalForm from './components/forms/ConversationalForm';
 import type { FormData } from './types/form.types';
 import type { SavedList } from './hooks/useListHistory';
 
-function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'form' | 'results' | 'history'>('home');
+function AppContent() {
+  const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState<'home' | 'ai-form' | 'catalog' | 'results' | 'history'>('home');
   const [formData, setFormData] = useState<FormData | null>(null);
   const [resultadoIA, setResultadoIA] = useState<any>(null);
 
   // Para desarrollo: mostrar TestAPI
   const showTestAPI = window.location.search.includes('test=api');
 
+  const handleNavigate = (view: string) => {
+    switch (view) {
+      case 'home':
+        navigate('/');
+        setCurrentView('home');
+        break;
+      case 'ai-form':
+        navigate('/ai-form');
+        setCurrentView('ai-form');
+        break;
+      case 'catalog':
+        navigate('/catalog');
+        setCurrentView('catalog');
+        break;
+      case 'history':
+        navigate('/history');
+        setCurrentView('history');
+        break;
+      default:
+        navigate('/');
+        setCurrentView('home');
+    }
+  };
+
   const handleStartForm = () => {
-    setCurrentView('form');
+    navigate('/ai-form');
+    setCurrentView('ai-form');
   };
 
   const handleFormSubmit = (data: FormData, resultado?: any) => {
@@ -28,20 +58,24 @@ function App() {
     if (resultado) {
       setResultadoIA(resultado);
     }
+    navigate('/results');
     setCurrentView('results');
   };
 
   const handleFormCancel = () => {
+    navigate('/');
     setCurrentView('home');
   };
 
   const handleBackToHome = () => {
+    navigate('/');
     setCurrentView('home');
     setFormData(null);
     setResultadoIA(null);
   };
 
   const handleViewHistory = () => {
+    navigate('/history');
     setCurrentView('history');
   };
 
@@ -60,87 +94,91 @@ function App() {
       recomendaciones: lista.recomendaciones,
     };
     setResultadoIA(resultado);
+    navigate('/results');
     setCurrentView('results');
   };
 
-  const renderCurrentView = () => {
-    if (showTestAPI) {
-      return <TestAPI />;
-    }
-
-    switch (currentView) {
-      case 'home':
-        return <HomePage onStartForm={handleStartForm} onViewHistory={handleViewHistory} />;
-
-      case 'history':
-        return <HistoryPage onViewList={handleViewList} onBackToHome={handleBackToHome} />;
-
-      case 'form':
-        return (
-          <ConversationalForm
-            onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-            initialData={formData || undefined}
-          />
-        );
-      
-      case 'results':
-        // Si tenemos resultado de IA, mostrar ResultsPage
-        if (resultadoIA) {
-          return (
-            <ResultsPage
-              resultado={resultadoIA}
-              onBackToHome={handleBackToHome}
-            />
-          );
-        }
-
-        // Fallback temporal si no hay resultado de IA
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-            <div className="max-w-4xl mx-auto px-4 py-8">
-              <div className="text-center space-y-6">
-                <div className="text-6xl">🎉</div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  ¡Lista generada exitosamente!
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Tu lista personalizada está lista. Aquí se mostraría el resultado de la IA.
-                </p>
-
-                {/* Mostrar datos del formulario */}
-                {formData && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-left max-w-2xl mx-auto">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                      Resumen de tu solicitud:
-                    </h3>
-                    <pre className="text-sm text-gray-600 dark:text-gray-300 overflow-auto">
-                      {JSON.stringify(formData, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleBackToHome}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
-                >
-                  Volver al inicio
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      
-      default:
-        return <HomePage onStartForm={handleStartForm} />;
-    }
-  };
+  if (showTestAPI) {
+    return <TestAPI />;
+  }
 
   return (
+    <>
+      <Header
+        onNavigate={handleNavigate}
+        currentView={currentView}
+      />
+      <Routes>
+        <Route
+          path="/"
+          element={<HomePage onStartForm={handleStartForm} onViewHistory={handleViewHistory} />}
+        />
+        <Route
+          path="/ai-form"
+          element={
+            <ConversationalForm
+              onSubmit={handleFormSubmit}
+              onCancel={handleFormCancel}
+              initialData={formData || undefined}
+            />
+          }
+        />
+        <Route
+          path="/catalog"
+          element={<CatalogPage />}
+        />
+        <Route
+          path="/manual-results"
+          element={<ManualListResults />}
+        />
+        <Route
+          path="/results"
+          element={
+            resultadoIA ? (
+              <ResultsPage
+                resultado={resultadoIA}
+                onBackToHome={handleBackToHome}
+              />
+            ) : (
+              <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+                <div className="max-w-4xl mx-auto px-4 py-8 mt-20">
+                  <div className="text-center space-y-6">
+                    <div className="text-6xl">🎉</div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                      ¡Lista generada exitosamente!
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Tu lista personalizada está lista. Aquí se mostraría el resultado de la IA.
+                    </p>
+                    <button
+                      onClick={handleBackToHome}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                    >
+                      Volver al inicio
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        />
+        <Route
+          path="/history"
+          element={<HistoryPage onViewList={handleViewList} onBackToHome={handleBackToHome} />}
+        />
+      </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
     <AppProvider>
-      <div className="App">
-        {renderCurrentView()}
-      </div>
+      <Router>
+        <div className="App">
+          <AppContent />
+        </div>
+      </Router>
     </AppProvider>
   );
 }
