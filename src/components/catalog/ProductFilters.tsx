@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, X, RefreshCw } from 'lucide-react';
 import type { Category, ProductFilters as Filters } from '../../types/cart.types';
 
 interface ProductFiltersProps {
@@ -20,7 +20,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [precioMin, setPrecioMin] = useState<string>(filters.precioMin?.toString() || '');
   const [precioMax, setPrecioMax] = useState<string>(filters.precioMax?.toString() || '');
-  const [showFilters, setShowFilters] = useState(false);
 
   // Actualizar subcategorías cuando cambia la categoría
   useEffect(() => {
@@ -49,7 +48,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     onFiltersChange({
       ...filters,
       categoriaId: categoryId,
-      subcategoriaId: undefined, // Resetear subcategoría
+      subcategoriaId: undefined,
     });
   };
 
@@ -81,131 +80,135 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const hasActiveFilters = filters.categoriaId || filters.subcategoriaId || filters.precioMin || filters.precioMax || filters.searchTerm;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
-      {/* Barra de búsqueda y toggle filtros */}
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
-        {/* Búsqueda */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+      {/* Layout Horizontal Desktop */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Búsqueda - Más ancha */}
+        <div className="flex-1 lg:flex-[2] relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar productos..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            placeholder="Buscar productos por nombre..."
+            className="w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all"
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={() => {
+                setSearchTerm('');
+                onSearch('');
+              }}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           )}
         </div>
 
-        {/* Botón mostrar/ocultar filtros */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-        >
-          <SlidersHorizontal className="w-5 h-5" />
-          <span className="font-medium">Filtros</span>
-          {hasActiveFilters && (
-            <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-              {[filters.categoriaId, filters.subcategoriaId, filters.precioMin, filters.precioMax].filter(Boolean).length}
-            </span>
-          )}
-        </button>
+        {/* Categoría */}
+        <div className="flex-1">
+          <select
+            value={selectedCategory || ''}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full px-4 py-3.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all cursor-pointer"
+          >
+            <option value="">📂 Todas las categorías</option>
+            {categories.map((cat) => (
+              <option key={cat.id_categoria} value={cat.id_categoria}>
+                {cat.nombre_categoria}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Subcategoría */}
+        <div className="flex-1">
+          <select
+            value={filters.subcategoriaId || ''}
+            onChange={(e) => handleSubcategoryChange(e.target.value)}
+            disabled={!selectedCategory}
+            className="w-full px-4 py-3.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">🏷️ Todas las subcategorías</option>
+            {subcategories.map((subcat) => (
+              <option key={subcat.id_subcategoria} value={subcat.id_subcategoria}>
+                {subcat.nombre_subcategoria}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Precio Mínimo */}
+        <div className="w-full lg:w-32">
+          <input
+            type="number"
+            value={precioMin}
+            onChange={(e) => {
+              setPrecioMin(e.target.value);
+            }}
+            onBlur={handlePriceChange}
+            placeholder="Mín €"
+            className="w-full px-4 py-3.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all"
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        {/* Precio Máximo */}
+        <div className="w-full lg:w-32">
+          <input
+            type="number"
+            value={precioMax}
+            onChange={(e) => {
+              setPrecioMax(e.target.value);
+            }}
+            onBlur={handlePriceChange}
+            placeholder="Máx €"
+            className="w-full px-4 py-3.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all"
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        {/* Botón Reset */}
+        {hasActiveFilters && (
+          <button
+            onClick={handleResetFilters}
+            className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all duration-200 text-gray-700 dark:text-gray-300 font-medium"
+            title="Limpiar filtros"
+          >
+            <RefreshCw className="w-5 h-5" />
+            <span className="hidden xl:inline">Limpiar</span>
+          </button>
+        )}
       </div>
 
-      {/* Panel de filtros */}
-      {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          {/* Categoría */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Categoría
-            </label>
-            <select
-              value={selectedCategory || ''}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="">Todas</option>
-              {categories.map((cat) => (
-                <option key={cat.id_categoria} value={cat.id_categoria}>
-                  {cat.nombre_categoria}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subcategoría */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Subcategoría
-            </label>
-            <select
-              value={filters.subcategoriaId || ''}
-              onChange={(e) => handleSubcategoryChange(e.target.value)}
-              disabled={!selectedCategory}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">Todas</option>
-              {subcategories.map((subcat) => (
-                <option key={subcat.id_subcategoria} value={subcat.id_subcategoria}>
-                  {subcat.nombre_subcategoria}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Precio mínimo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Precio Mín. (€)
-            </label>
-            <input
-              type="number"
-              value={precioMin}
-              onChange={(e) => setPrecioMin(e.target.value)}
-              onBlur={handlePriceChange}
-              placeholder="0.00"
-              step="0.01"
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          {/* Precio máximo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Precio Máx. (€)
-            </label>
-            <input
-              type="number"
-              value={precioMax}
-              onChange={(e) => setPrecioMax(e.target.value)}
-              onBlur={handlePriceChange}
-              placeholder="100.00"
-              step="0.01"
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          {/* Botón limpiar filtros */}
-          {hasActiveFilters && (
-            <div className="md:col-span-4 flex justify-end">
-              <button
-                onClick={handleResetFilters}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4" />
-                <span>Limpiar filtros</span>
-              </button>
-            </div>
+      {/* Indicador de filtros activos */}
+      {hasActiveFilters && (
+        <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <span className="font-medium">Filtros activos:</span>
+          {filters.categoriaId && (
+            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+              {categories.find(c => c.id_categoria === filters.categoriaId)?.nombre_categoria}
+            </span>
+          )}
+          {filters.subcategoriaId && (
+            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+              {subcategories.find(s => s.id_subcategoria === filters.subcategoriaId)?.nombre_subcategoria}
+            </span>
+          )}
+          {(filters.precioMin || filters.precioMax) && (
+            <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">
+              {filters.precioMin && `Desde ${filters.precioMin}€`}
+              {filters.precioMin && filters.precioMax && ' - '}
+              {filters.precioMax && `Hasta ${filters.precioMax}€`}
+            </span>
+          )}
+          {filters.searchTerm && (
+            <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full">
+              "{filters.searchTerm}"
+            </span>
           )}
         </div>
       )}
