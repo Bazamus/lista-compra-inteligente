@@ -56,90 +56,41 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
   } = req.query;
 
   try {
-    // Primero, construimos la query base para contar
-    // Necesitamos incluir las relaciones para poder filtrar por ellas
-    let countQuery = supabase
-      .from('productos')
-      .select(`
-        id_producto,
-        subcategorias!inner(
-          id_subcategoria,
-          categorias!inner(
-            id_categoria
-          )
-        )
-      `, { count: 'exact', head: false })
-      .eq('activo', true);
+    // NUEVA LÓGICA: Cuando hay búsqueda, se prioriza sobre los filtros de categoría
+    // Los otros filtros (precio) se aplican como refinamiento opcional
 
-    // Aplicar los mismos filtros a la query de conteo
-    if (categoria) {
-      countQuery = countQuery.eq('subcategorias.categorias.nombre_categoria', categoria);
-    }
-
-    if (subcategoria) {
-      countQuery = countQuery.eq('subcategorias.nombre_subcategoria', subcategoria);
-    }
-
-    if (precio_min) {
-      countQuery = countQuery.gte('precio_por_unidad', parseFloat(precio_min as string));
-    }
-
-    if (precio_max) {
-      countQuery = countQuery.lte('precio_por_unidad', parseFloat(precio_max as string));
-    }
-
-    // Ahora construimos la query para obtener los productos
-    let query = supabase
-      .from('productos')
-      .select(`
-        id_producto,
-        nombre_producto,
-        formato_venta,
-        precio_formato_venta,
-        unidad_medida,
-        precio_por_unidad,
-        cantidad_unidad_medida,
-        url_enlace,
-        imagen_url,
-        subcategorias!inner(
-          id_subcategoria,
-          nombre_subcategoria,
-          categorias!inner(
-            id_categoria,
-            nombre_categoria
-          )
-        )
-      `)
-      .eq('activo', true);
-
-    // Aplicar los mismos filtros
-    if (categoria) {
-      query = query.eq('subcategorias.categorias.nombre_categoria', categoria);
-    }
-
-    if (subcategoria) {
-      query = query.eq('subcategorias.nombre_subcategoria', subcategoria);
-    }
-
-    if (precio_min) {
-      query = query.gte('precio_por_unidad', parseFloat(precio_min as string));
-    }
-
-    if (precio_max) {
-      query = query.lte('precio_por_unidad', parseFloat(precio_max as string));
-    }
-
-    // Ordenar siempre por nombre
-    query = query.order('nombre_producto', { ascending: true });
-
-    // Si hay búsqueda, necesitamos traer más productos para filtrar en memoria
     let totalCount = 0;
     let productos: any[] = [];
+    const offsetNum = parseInt(offset as string);
+    const limitNum = parseInt(limit as string);
 
     if (search) {
-      // Para búsqueda, traemos hasta 1000 productos y filtramos localmente
-      query = query.range(0, 999);
-      
+      // MODO BÚSQUEDA: Buscar en TODOS los productos activos
+      let query = supabase
+        .from('productos')
+        .select(`
+          id_producto,
+          nombre_producto,
+          formato_venta,
+          precio_formato_venta,
+          unidad_medida,
+          precio_por_unidad,
+          cantidad_unidad_medida,
+          url_enlace,
+          imagen_url,
+          subcategorias!inner(
+            id_subcategoria,
+            nombre_subcategoria,
+            categorias!inner(
+              id_categoria,
+              nombre_categoria
+            )
+          )
+        `)
+        .eq('activo', true)
+        .order('nombre_producto', { ascending: true })
+        .range(0, 999); // Traemos hasta 1000 productos para búsqueda
+
       const { data: productosRaw, error } = await query;
 
       if (error) {
@@ -149,26 +100,108 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
 
       productos = productosRaw || [];
 
-      // Filtrar por búsqueda con normalización (sin acentos, case-insensitive)
+      // 1. Filtrar por búsqueda con normalización (sin acentos, case-insensitive)
       const searchNormalized = normalizeText(search as string);
       productos = productos.filter(p =>
         normalizeText(p.nombre_producto).includes(searchNormalized)
       );
 
+      // 2. Aplicar filtros adicionales DESPUÉS de la búsqueda (opcional)
+      if (categoria) {
+        productos = productos.filter(p =>
+          p.subcategorias?.categorias?.nombre_categoria === categoria
+        );
+      }
+
+      if (subcategoria) {
+        productos = productos.filter(p =>
+          p.subcategorias?.nombre_subcategoria === subcategoria
+        );
+      }
+
+      if (precio_min) {
+        const precioMinNum = parseFloat(precio_min as string);
+        productos = productos.filter(p => p.precio_por_unidad >= precioMinNum);
+      }
+
+      if (precio_max) {
+        const precioMaxNum = parseFloat(precio_max as string);
+        productos = productos.filter(p => p.precio_por_unidad <= precioMaxNum);
+      }
+
       totalCount = productos.length;
 
-      // Aplicar paginación después del filtrado
-      const offsetNum = parseInt(offset as string);
-      const limitNum = parseInt(limit as string);
+      // 3. Aplicar paginación después del filtrado
       productos = productos.slice(offsetNum, offsetNum + limitNum);
 
     } else {
-      // Sin búsqueda, aplicamos paginación directa en la base de datos
-      const offsetNum = parseInt(offset as string);
-      const limitNum = parseInt(limit as string);
-      
-      // Aplicar paginación
-      query = query.range(offsetNum, offsetNum + limitNum - 1);
+      // MODO SIN BÚSQUEDA: Aplicar filtros tradicionales con queries de BD
+
+      // Query para contar
+      let countQuery = supabase
+        .from('productos')
+        .select(`
+          id_producto,
+          subcategorias!inner(
+            id_subcategoria,
+            categorias!inner(
+              id_categoria
+            )
+          )
+        `, { count: 'exact', head: false })
+        .eq('activo', true);
+
+      // Query para obtener productos
+      let query = supabase
+        .from('productos')
+        .select(`
+          id_producto,
+          nombre_producto,
+          formato_venta,
+          precio_formato_venta,
+          unidad_medida,
+          precio_por_unidad,
+          cantidad_unidad_medida,
+          url_enlace,
+          imagen_url,
+          subcategorias!inner(
+            id_subcategoria,
+            nombre_subcategoria,
+            categorias!inner(
+              id_categoria,
+              nombre_categoria
+            )
+          )
+        `)
+        .eq('activo', true);
+
+      // Aplicar filtros a ambas queries
+      if (categoria) {
+        query = query.eq('subcategorias.categorias.nombre_categoria', categoria);
+        countQuery = countQuery.eq('subcategorias.categorias.nombre_categoria', categoria);
+      }
+
+      if (subcategoria) {
+        query = query.eq('subcategorias.nombre_subcategoria', subcategoria);
+        countQuery = countQuery.eq('subcategorias.nombre_subcategoria', subcategoria);
+      }
+
+      if (precio_min) {
+        const precioMinNum = parseFloat(precio_min as string);
+        query = query.gte('precio_por_unidad', precioMinNum);
+        countQuery = countQuery.gte('precio_por_unidad', precioMinNum);
+      }
+
+      if (precio_max) {
+        const precioMaxNum = parseFloat(precio_max as string);
+        query = query.lte('precio_por_unidad', precioMaxNum);
+        countQuery = countQuery.lte('precio_por_unidad', precioMaxNum);
+      }
+
+      // Ordenar y paginar
+      query = query
+        .order('nombre_producto', { ascending: true })
+        .range(offsetNum, offsetNum + limitNum - 1);
 
       // Ejecutar ambas queries en paralelo
       const [{ data: productosRaw, error: productsError }, { count, error: countError }] = await Promise.all([
@@ -189,9 +222,6 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
       productos = productosRaw || [];
       totalCount = count || 0;
     }
-
-    const offsetNum = parseInt(offset as string);
-    const limitNum = parseInt(limit as string);
 
     res.status(200).json({
       productos: productos,
