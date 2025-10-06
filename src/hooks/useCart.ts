@@ -36,8 +36,9 @@ export const useCart = () => {
 
   const calculateTotals = (items: CartItem[]): { totalItems: number; totalPrice: number } => {
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    // Usar precio_formato_venta para calcular el total
     const totalPrice = items.reduce(
-      (sum, item) => sum + item.product.precio_por_unidad * item.quantity,
+      (sum, item) => sum + item.product.precio_formato_venta * item.quantity,
       0
     );
     return { totalItems, totalPrice };

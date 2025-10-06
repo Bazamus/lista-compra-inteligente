@@ -26,7 +26,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   if (!product) return null;
 
   const isInCart = currentQuantity > 0;
-  const totalPrice = product.precio_por_unidad * (isInCart ? currentQuantity : quantity);
+  // Usar precio_formato_venta para cálculo total
+  const totalPrice = product.precio_formato_venta * (isInCart ? currentQuantity : quantity);
 
   const handleIncrement = () => {
     if (isInCart) {
@@ -135,24 +136,24 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Precio */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {product.precio_por_unidad.toFixed(2)}€
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">
-                        / {product.unidad_medida}
+                  {/* Precio - FORMATO es el principal */}
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-800">
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
+                      Precio del {product.formato_venta}
+                    </p>
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        {product.precio_formato_venta.toFixed(2)}€
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {product.formato_venta} • {product.cantidad_unidad_medida} {product.unidad_medida}
+                    <div className="pt-3 border-t border-blue-200 dark:border-blue-800">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {product.formato_venta} • {product.cantidad_unidad_medida} {product.unidad_medida}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Precio unitario: {product.precio_por_unidad.toFixed(2)}€ / {product.unidad_medida}
+                      </p>
                     </div>
-                    {product.precio_formato_venta && product.precio_formato_venta !== product.precio_por_unidad && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Precio formato: {product.precio_formato_venta.toFixed(2)}€
-                      </div>
-                    )}
                   </div>
 
                   {/* Detalles adicionales */}

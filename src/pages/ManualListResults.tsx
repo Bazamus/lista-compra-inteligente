@@ -45,9 +45,9 @@ const ManualListResults: React.FC = () => {
 
   const { saveList } = useListHistory();
 
-  // Calcular totales actualizados
+  // Calcular totales actualizados - Usar precio_formato_venta
   const presupuestoTotal = productosLista.reduce(
-    (sum, item) => sum + item.product.precio_por_unidad * item.quantity,
+    (sum, item) => sum + item.product.precio_formato_venta * item.quantity,
     0
   );
 
@@ -81,7 +81,7 @@ const ManualListResults: React.FC = () => {
           id_producto: item.product.id_producto,
           nombre: item.product.nombre_producto,
           cantidad: item.quantity,
-          precio_unitario: item.product.precio_por_unidad,
+          precio_unitario: item.product.precio_formato_venta, // Precio del formato de venta
           categoria: item.product.nombre_categoria,
           esencial: false,
         })),
@@ -152,7 +152,7 @@ const ManualListResults: React.FC = () => {
           id_producto: item.product.id_producto,
           nombre: item.product.nombre_producto,
           cantidad: item.quantity,
-          precio_unitario: item.product.precio_por_unidad,
+          precio_unitario: item.product.precio_formato_venta, // Precio del formato de venta
           categoria: item.product.nombre_categoria,
           esencial: false,
         })),
@@ -184,7 +184,7 @@ const ManualListResults: React.FC = () => {
           id_producto: item.product.id_producto,
           nombre: item.product.nombre_producto,
           cantidad: item.quantity,
-          precio_unitario: item.product.precio_por_unidad,
+          precio_unitario: item.product.precio_formato_venta, // Precio del formato de venta
           categoria: item.product.nombre_categoria,
           esencial: false,
         })),
@@ -213,7 +213,7 @@ const ManualListResults: React.FC = () => {
           id_producto: item.product.id_producto,
           nombre: item.product.nombre_producto,
           cantidad: item.quantity,
-          precio_unitario: item.product.precio_por_unidad,
+          precio_unitario: item.product.precio_formato_venta, // Precio del formato de venta
           categoria: item.product.nombre_categoria,
           esencial: false,
         })),
@@ -256,7 +256,7 @@ const ManualListResults: React.FC = () => {
       id_producto: item.product.id_producto,
       nombre: item.product.nombre_producto,
       cantidad: item.quantity,
-      precio_unitario: item.product.precio_por_unidad,
+      precio_unitario: item.product.precio_formato_venta, // Editar precio del formato
     });
     setShowEditModal(true);
   };
@@ -271,7 +271,7 @@ const ManualListResults: React.FC = () => {
                 quantity: cantidad,
                 product: {
                   ...item.product,
-                  precio_por_unidad: precioUnitario,
+                  precio_formato_venta: precioUnitario, // Actualizar precio del formato
                 },
               }
             : item
@@ -430,7 +430,7 @@ const ManualListResults: React.FC = () => {
           {categorias.map((categoria) => {
             const productosCategoria = productosPorCategoria[categoria];
             const totalCategoria = productosCategoria.reduce(
-              (sum, item) => sum + item.product.precio_por_unidad * item.quantity,
+              (sum, item) => sum + item.product.precio_formato_venta * item.quantity,
               0
             );
             const isExpanded = expandedCategories.has(categoria);
@@ -493,7 +493,7 @@ const ManualListResults: React.FC = () => {
                                   {item.product.nombre_producto}
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  {item.quantity} × {item.product.precio_por_unidad.toFixed(2)}€ = {(item.product.precio_por_unidad * item.quantity).toFixed(2)}€
+                                  {item.quantity} × {item.product.precio_formato_venta.toFixed(2)}€ ({item.product.formato_venta}) = {(item.product.precio_formato_venta * item.quantity).toFixed(2)}€
                                 </p>
                               </div>
 

@@ -142,12 +142,12 @@ const CartModal: React.FC<CartModalProps> = ({
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           {item.product.nombre_categoria} • {item.product.nombre_subcategoria}
                         </p>
-                        <div className="flex items-baseline gap-2 mt-1">
+                        <div className="mt-1">
                           <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {item.product.precio_por_unidad.toFixed(2)}€
+                            {item.product.precio_formato_venta.toFixed(2)}€
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            / {item.product.unidad_medida}
+                            {item.product.formato_venta}
                           </p>
                         </div>
                       </div>
@@ -179,7 +179,7 @@ const CartModal: React.FC<CartModalProps> = ({
 
                         {/* Subtotal */}
                         <p className="text-sm font-bold text-gray-900 dark:text-white">
-                          {(item.product.precio_por_unidad * item.quantity).toFixed(2)}€
+                          {(item.product.precio_formato_venta * item.quantity).toFixed(2)}€
                         </p>
                       </div>
                     </motion.div>

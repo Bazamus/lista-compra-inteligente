@@ -110,13 +110,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {product.formato_venta} • {product.cantidad_unidad_medida} {product.unidad_medida}
         </p>
 
-        {/* Precio */}
-        <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            {product.precio_por_unidad.toFixed(2)}€
-          </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            / {product.unidad_medida}
+        {/* Precio - FORMATO es el principal */}
+        <div className="mb-4">
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {product.precio_formato_venta.toFixed(2)}€
+            </span>
+          </div>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            ({product.precio_por_unidad.toFixed(2)}€ / {product.unidad_medida})
           </span>
         </div>
 

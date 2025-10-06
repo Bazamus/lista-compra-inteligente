@@ -79,6 +79,11 @@ function AppContent() {
     setCurrentView('history');
   };
 
+  const handleNavigateToCatalog = () => {
+    navigate('/catalog');
+    setCurrentView('catalog');
+  };
+
   const handleViewList = (lista: SavedList) => {
     // Convertir SavedList a formato de resultado
     const resultado = {
@@ -111,7 +116,13 @@ function AppContent() {
       <Routes>
         <Route
           path="/"
-          element={<HomePage onStartForm={handleStartForm} onViewHistory={handleViewHistory} />}
+          element={
+            <HomePage
+              onStartForm={handleStartForm}
+              onViewHistory={handleViewHistory}
+              onNavigateToCatalog={handleNavigateToCatalog}
+            />
+          }
         />
         <Route
           path="/ai-form"

@@ -4,9 +4,10 @@ import { useListHistory } from '../hooks/useListHistory';
 interface HomePageProps {
   onStartForm: () => void;
   onViewHistory?: () => void;
+  onNavigateToCatalog?: () => void;
 }
 
-export default function HomePage({ onStartForm, onViewHistory }: HomePageProps) {
+export default function HomePage({ onStartForm, onViewHistory, onNavigateToCatalog }: HomePageProps) {
   const { savedLists } = useListHistory();
 
   const features = [
@@ -69,7 +70,7 @@ export default function HomePage({ onStartForm, onViewHistory }: HomePageProps) 
               </button>
 
               <button
-                onClick={() => window.location.href = '/catalog'}
+                onClick={onNavigateToCatalog}
                 className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 text-gray-900 dark:text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
               >
                 <Package className="w-5 h-5" />

@@ -7,6 +7,15 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Función para normalizar texto: eliminar acentos y convertir a minúsculas
+function normalizeText(text: string): string {
+  return text
+    .normalize('NFD') // Descomponer caracteres con acentos
+    .replace(/[\u0300-\u036f]/g, '') // Eliminar diacríticos
+    .toLowerCase() // Convertir a minúsculas
+    .trim();
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -79,10 +88,6 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
       query = query.eq('subcategorias.nombre_subcategoria', subcategoria);
     }
 
-    if (search) {
-      query = query.ilike('nombre_producto', `%${search}%`);
-    }
-
     if (precio_min) {
       query = query.gte('precio_por_unidad', parseFloat(precio_min as string));
     }
@@ -91,31 +96,51 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
       query = query.lte('precio_por_unidad', parseFloat(precio_max as string));
     }
 
-    // Paginación y ordenamiento
-    query = query
-      .order('nombre_producto', { ascending: true })
-      .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+    // Si hay búsqueda, traemos más resultados para filtrar en memoria
+    if (search) {
+      // Traer más productos para filtrar localmente
+      query = query
+        .order('nombre_producto', { ascending: true })
+        .range(0, 999); // Traer hasta 1000 productos
+    } else {
+      // Paginación normal
+      query = query
+        .order('nombre_producto', { ascending: true })
+        .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+    }
 
-    const { data: productos, error, count } = await query;
+    const { data: productosRaw, error } = await query;
 
     if (error) {
       console.error('Error Supabase:', error);
       return res.status(400).json({ error: error.message });
     }
 
-    // Contar total para paginación
-    const { count: totalCount } = await supabase
-      .from('productos')
-      .select('*', { count: 'exact', head: true })
-      .eq('activo', true);
+    let productos = productosRaw || [];
+
+    // Filtrar por búsqueda con normalización (sin acentos, case-insensitive)
+    if (search) {
+      const searchNormalized = normalizeText(search as string);
+      productos = productos.filter(p =>
+        normalizeText(p.nombre_producto).includes(searchNormalized)
+      );
+    }
+
+    // Aplicar paginación después del filtrado de búsqueda
+    const totalCount = productos.length;
+    const offsetNum = parseInt(offset as string);
+    const limitNum = parseInt(limit as string);
+    const productosPaginados = search
+      ? productos.slice(offsetNum, offsetNum + limitNum)
+      : productos;
 
     res.status(200).json({
-      productos: productos || [],
+      productos: productosPaginados,
       pagination: {
-        total: totalCount || 0,
-        offset: parseInt(offset as string),
-        limit: parseInt(limit as string),
-        hasNext: (parseInt(offset as string) + parseInt(limit as string)) < (totalCount || 0)
+        total: totalCount,
+        offset: offsetNum,
+        limit: limitNum,
+        hasNext: (offsetNum + limitNum) < totalCount
       }
     });
 
