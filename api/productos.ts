@@ -49,13 +49,46 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
     categoria,
     subcategoria,
     search,
-    limit = '50',
+    limit = '24',
     offset = '0',
     precio_min,
     precio_max
   } = req.query;
 
   try {
+    // Primero, construimos la query base para contar
+    // Necesitamos incluir las relaciones para poder filtrar por ellas
+    let countQuery = supabase
+      .from('productos')
+      .select(`
+        id_producto,
+        subcategorias!inner(
+          id_subcategoria,
+          categorias!inner(
+            id_categoria
+          )
+        )
+      `, { count: 'exact', head: false })
+      .eq('activo', true);
+
+    // Aplicar los mismos filtros a la query de conteo
+    if (categoria) {
+      countQuery = countQuery.eq('subcategorias.categorias.nombre_categoria', categoria);
+    }
+
+    if (subcategoria) {
+      countQuery = countQuery.eq('subcategorias.nombre_subcategoria', subcategoria);
+    }
+
+    if (precio_min) {
+      countQuery = countQuery.gte('precio_por_unidad', parseFloat(precio_min as string));
+    }
+
+    if (precio_max) {
+      countQuery = countQuery.lte('precio_por_unidad', parseFloat(precio_max as string));
+    }
+
+    // Ahora construimos la query para obtener los productos
     let query = supabase
       .from('productos')
       .select(`
@@ -79,7 +112,7 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
       `)
       .eq('activo', true);
 
-    // Filtros
+    // Aplicar los mismos filtros
     if (categoria) {
       query = query.eq('subcategorias.categorias.nombre_categoria', categoria);
     }
@@ -96,46 +129,72 @@ async function handleGetProductos(req: VercelRequest, res: VercelResponse) {
       query = query.lte('precio_por_unidad', parseFloat(precio_max as string));
     }
 
-    // Si hay búsqueda, traemos más resultados para filtrar en memoria
+    // Ordenar siempre por nombre
+    query = query.order('nombre_producto', { ascending: true });
+
+    // Si hay búsqueda, necesitamos traer más productos para filtrar en memoria
+    let totalCount = 0;
+    let productos: any[] = [];
+
     if (search) {
-      // Traer más productos para filtrar localmente
-      query = query
-        .order('nombre_producto', { ascending: true })
-        .range(0, 999); // Traer hasta 1000 productos
-    } else {
-      // Paginación normal
-      query = query
-        .order('nombre_producto', { ascending: true })
-        .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
-    }
+      // Para búsqueda, traemos hasta 1000 productos y filtramos localmente
+      query = query.range(0, 999);
+      
+      const { data: productosRaw, error } = await query;
 
-    const { data: productosRaw, error } = await query;
+      if (error) {
+        console.error('Error Supabase:', error);
+        return res.status(400).json({ error: error.message });
+      }
 
-    if (error) {
-      console.error('Error Supabase:', error);
-      return res.status(400).json({ error: error.message });
-    }
+      productos = productosRaw || [];
 
-    let productos = productosRaw || [];
-
-    // Filtrar por búsqueda con normalización (sin acentos, case-insensitive)
-    if (search) {
+      // Filtrar por búsqueda con normalización (sin acentos, case-insensitive)
       const searchNormalized = normalizeText(search as string);
       productos = productos.filter(p =>
         normalizeText(p.nombre_producto).includes(searchNormalized)
       );
+
+      totalCount = productos.length;
+
+      // Aplicar paginación después del filtrado
+      const offsetNum = parseInt(offset as string);
+      const limitNum = parseInt(limit as string);
+      productos = productos.slice(offsetNum, offsetNum + limitNum);
+
+    } else {
+      // Sin búsqueda, aplicamos paginación directa en la base de datos
+      const offsetNum = parseInt(offset as string);
+      const limitNum = parseInt(limit as string);
+      
+      // Aplicar paginación
+      query = query.range(offsetNum, offsetNum + limitNum - 1);
+
+      // Ejecutar ambas queries en paralelo
+      const [{ data: productosRaw, error: productsError }, { count, error: countError }] = await Promise.all([
+        query,
+        countQuery
+      ]);
+
+      if (productsError) {
+        console.error('Error Supabase productos:', productsError);
+        return res.status(400).json({ error: productsError.message });
+      }
+
+      if (countError) {
+        console.error('Error Supabase count:', countError);
+        return res.status(400).json({ error: countError.message });
+      }
+
+      productos = productosRaw || [];
+      totalCount = count || 0;
     }
 
-    // Aplicar paginación después del filtrado de búsqueda
-    const totalCount = productos.length;
     const offsetNum = parseInt(offset as string);
     const limitNum = parseInt(limit as string);
-    const productosPaginados = search
-      ? productos.slice(offsetNum, offsetNum + limitNum)
-      : productos;
 
     res.status(200).json({
-      productos: productosPaginados,
+      productos: productos,
       pagination: {
         total: totalCount,
         offset: offsetNum,
