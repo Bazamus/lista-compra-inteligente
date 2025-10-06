@@ -54,7 +54,7 @@ const CatalogPage: React.FC = () => {
   const handleSearch = (searchTerm: string) => {
     const newFilters = { ...filters, searchTerm };
     setFilters(newFilters);
-    searchProducts(searchTerm, filters);
+    fetchProducts(newFilters, 1);
   };
 
   const handleShowDetail = (product: CartProduct) => {
