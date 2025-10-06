@@ -26,6 +26,7 @@ export const useProducts = () => {
           nombre_categoria,
           subcategorias (
             id_subcategoria,
+            id_categoria,
             nombre_subcategoria
           )
         `)
@@ -33,7 +34,7 @@ export const useProducts = () => {
 
       if (error) throw error;
 
-      setCategories(data || []);
+      setCategories(data as Category[] || []);
     } catch (err: any) {
       console.error('Error al cargar categorías:', err);
       setError(err.message);
@@ -75,7 +76,7 @@ export const useProducts = () => {
           .order('nombre_producto', { ascending: true })
           .limit(1000); // Traer hasta 1000 productos para búsqueda
 
-        const { data: productosRaw, error, count } = await query;
+        const { data: productosRaw, error } = await query;
 
         if (error) throw error;
 

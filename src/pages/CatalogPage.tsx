@@ -32,7 +32,6 @@ const CatalogPage: React.FC = () => {
     totalPages,
     totalItems,
     fetchProducts,
-    searchProducts,
     changePage,
   } = useProducts();
 
