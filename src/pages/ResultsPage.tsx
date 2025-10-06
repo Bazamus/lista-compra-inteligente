@@ -132,11 +132,11 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
       id_producto: producto.id_producto,
       nombre: producto.nombre_producto,
       cantidad: cantidad,
-      precio_unitario: producto.precio_por_unidad,
+      precio_unitario: producto.precio_formato_venta, // Usar precio del formato
       categoria: producto.subcategorias.categorias.nombre_categoria,
       esencial: false
     };
-    
+
     setProductosLista(prev => [...prev, nuevoProducto]);
   };
 
@@ -179,9 +179,9 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const productosComprados = checkedProducts.size;
   const progreso = totalProductos > 0 ? (productosComprados / totalProductos) * 100 : 0;
 
-  // Recalcular presupuesto basado en productos actuales
+  // Recalcular presupuesto basado en productos actuales (usando precio_formato_venta)
   const presupuestoActual = productosLista.reduce((total, producto) => {
-    return total + (producto.precio_unitario * producto.cantidad);
+    return total + (producto.precio_unitario * producto.cantidad); // precio_unitario viene como precio_formato_venta
   }, 0);
 
   const presupuestoDisponible = lista.presupuesto_total || 0;
@@ -463,7 +463,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                               {(producto.cantidad * producto.precio_unitario).toFixed(2)}€
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {producto.precio_unitario.toFixed(2)}€/ud
+                              {producto.cantidad} × {producto.precio_unitario.toFixed(2)}€
                             </p>
                           </div>
 

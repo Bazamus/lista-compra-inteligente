@@ -94,7 +94,7 @@ export const exportToPDF = (data: ExportData) => {
 
   autoTable(doc, {
     startY: yPosition,
-    head: [['Producto', 'Cant.', 'Precio Unit.', 'Total']],
+    head: [['Producto', 'Cant.', 'Precio', 'Total']],
     body: tableData,
     theme: 'striped',
     headStyles: { fillColor: primaryColor, fontSize: 10 },

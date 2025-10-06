@@ -114,7 +114,13 @@ INSTRUCCIONES:
 4. Optimiza las cantidades según el número de personas y días
 5. Prioriza productos básicos y esenciales
 6. Incluye variedad en los menús
-7. Considera las restricciones alimentarias`
+7. Considera las restricciones alimentarias
+
+IMPORTANTE SOBRE PRECIOS:
+- Usa "precio_formato" para cálculos de presupuesto (es el precio del formato de venta: bandeja, bolsa, etc.)
+- "cantidad" representa el número de formatos (ejemplo: 2 bolsas = cantidad 2)
+- "cantidad_formato" indica cuánto hay en cada formato (ejemplo: 0.495 kg por bandeja)
+- Para planificar menús, considera "cantidad_formato" para saber cuánto producto real hay`
         },
         {
           role: "user",
@@ -238,7 +244,8 @@ function crearPromptGeneracionLista(params: RequestParams, productos: any[]): st
     acc[categoria][subcategoria].push({
       id: producto.id_producto,
       nombre: producto.nombre_producto,
-      precio: producto.precio_por_unidad,
+      precio_formato: producto.precio_formato_venta,
+      cantidad_formato: producto.cantidad_unidad_medida,
       unidad: producto.unidad_medida,
       formato: producto.formato_venta
     });
@@ -269,8 +276,8 @@ RESPONDE EN ESTE FORMATO JSON:
     {
       "id_producto": number,
       "nombre": "string",
-      "cantidad": number,
-      "precio_unitario": number,
+      "cantidad": number (número de formatos: bolsas, bandejas, etc.),
+      "precio_unitario": number (usa "precio_formato" del catálogo),
       "categoria": "string",
       "esencial": boolean
     }
@@ -282,11 +289,16 @@ RESPONDE EN ESTE FORMATO JSON:
       "cena": "descripción"
     }
   },
-  "presupuesto_estimado": number,
+  "presupuesto_estimado": number (suma de cantidad × precio_unitario de todos los productos),
   "recomendaciones": [
     "string con consejos"
   ]
 }
+
+CÁLCULO DE PRESUPUESTO:
+- precio_unitario en respuesta = precio_formato del catálogo
+- presupuesto_estimado = suma de (cantidad × precio_unitario) para todos los productos
+- Ejemplo: 2 bolsas de panecillos a 1.14€ = cantidad: 2, precio_unitario: 1.14, subtotal: 2.28€
 
 OPTIMIZA para el presupuesto y las preferencias indicadas.`;
 }

@@ -53,7 +53,7 @@ export const exportToExcel = (data: ExportData) => {
 
   // HOJA 2: Lista de Productos
   const productosData = [
-    ['Categoría', 'Producto', 'Cantidad', 'Precio Unitario', 'Total', 'Esencial', 'Comprado']
+    ['Categoría', 'Producto', 'Cantidad', 'Precio Formato', 'Total', 'Esencial', 'Comprado']
   ];
 
   // Agrupar y ordenar por categoría
