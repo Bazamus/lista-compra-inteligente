@@ -1,5 +1,4 @@
 import { ArrowRight, Sparkles, Clock, PiggyBank, History } from 'lucide-react';
-import Header from '../components/common/Header';
 import Button from '../components/common/Button';
 import { useListHistory } from '../hooks/useListHistory';
 
@@ -34,8 +33,7 @@ export default function HomePage({ onStartForm, onViewHistory }: HomePageProps) 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="min-h-screen bg-gray-50 pt-20">{/* Añadido pt-20 para compensar el header sticky */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
