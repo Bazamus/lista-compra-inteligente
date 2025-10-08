@@ -134,7 +134,15 @@ const ConversationalForm: React.FC<ConversationalFormProps> = ({
       onSubmit(formData as any);
     } else {
       nextStep();
+      // Scroll suave al inicio de la página
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handlePrevStep = () => {
+    prevStep();
+    // Scroll suave al inicio de la página
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -199,7 +207,7 @@ const ConversationalForm: React.FC<ConversationalFormProps> = ({
         >
           {/* Botón Anterior */}
           <button
-            onClick={prevStep}
+            onClick={handlePrevStep}
             disabled={isFirst}
             className={`
               flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200
