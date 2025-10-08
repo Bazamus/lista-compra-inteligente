@@ -31,6 +31,7 @@ const CatalogPage: React.FC = () => {
     currentPage,
     totalPages,
     totalItems,
+    searchSuggestions,
     fetchProducts,
     changePage,
   } = useProducts();
@@ -135,6 +136,26 @@ const CatalogPage: React.FC = () => {
                 <p className="text-gray-500 dark:text-gray-400">
                   Intenta ajustar los filtros de búsqueda
                 </p>
+
+                {/* Sugerencias de búsqueda si hay posibles errores de escritura */}
+                {searchSuggestions.length > 0 && (
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl max-w-md">
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">
+                      💡 ¿Quisiste decir?
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {searchSuggestions.map((sugerencia, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSearch(sugerencia)}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          {sugerencia}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
