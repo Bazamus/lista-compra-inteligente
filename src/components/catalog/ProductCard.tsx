@@ -12,6 +12,66 @@ interface ProductCardProps {
   onShowDetail: (product: CartProduct) => void;
 }
 
+// Función para obtener gradiente por categoría
+const getCategoryGradient = (categoria: string): string => {
+  const gradients: Record<string, string> = {
+    'Aceite, especias y salsas': 'from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30',
+    'Agua y refrescos': 'from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30',
+    'Aperitivos': 'from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30',
+    'Arroz, legumbres y pasta': 'from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30',
+    'Azúcar, caramelos y chocolate': 'from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30',
+    'Bebé': 'from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30',
+    'Bodega': 'from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30',
+    'Cacao, café e infusiones': 'from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30',
+    'Carne': 'from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30',
+    'Cereales y galletas': 'from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30',
+    'Charcutería y quesos': 'from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30',
+    'Congelados': 'from-cyan-100 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30',
+    'Conservas, caldos y cremas': 'from-green-100 to-lime-100 dark:from-green-900/30 dark:to-lime-900/30',
+    'Cuidado del cabello': 'from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30',
+    'Cuidado facial y corporal': 'from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30',
+    'Droguería y parafarmacia': 'from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30',
+    'Frescos': 'from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30',
+    'Huevos, leche y mantequilla': 'from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30',
+    'Limpieza': 'from-teal-100 to-blue-100 dark:from-teal-900/30 dark:to-blue-900/30',
+    'Panadería y pastelería': 'from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30',
+    'Pescado': 'from-blue-100 to-teal-100 dark:from-blue-900/30 dark:to-teal-900/30',
+    'Platos preparados': 'from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30',
+    'Yogures y postres': 'from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30',
+  };
+  return gradients[categoria] || 'from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600';
+};
+
+// Función para obtener emoji por categoría
+const getCategoryEmoji = (categoria: string): string => {
+  const emojis: Record<string, string> = {
+    'Aceite, especias y salsas': '🫒',
+    'Agua y refrescos': '💧',
+    'Aperitivos': '🍿',
+    'Arroz, legumbres y pasta': '🍚',
+    'Azúcar, caramelos y chocolate': '🍫',
+    'Bebé': '👶',
+    'Bodega': '🍷',
+    'Cacao, café e infusiones': '☕',
+    'Carne': '🥩',
+    'Cereales y galletas': '🍪',
+    'Charcutería y quesos': '🧀',
+    'Congelados': '🧊',
+    'Conservas, caldos y cremas': '🥫',
+    'Cuidado del cabello': '💆',
+    'Cuidado facial y corporal': '🧴',
+    'Droguería y parafarmacia': '💊',
+    'Frescos': '🥗',
+    'Huevos, leche y mantequilla': '🥛',
+    'Limpieza': '🧽',
+    'Panadería y pastelería': '🍞',
+    'Pescado': '🐟',
+    'Platos preparados': '🍱',
+    'Yogures y postres': '🍮',
+  };
+  return emojis[categoria] || '📦';
+};
+
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
   quantity,
@@ -33,6 +93,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const isInCart = quantity > 0;
+  const categoryGradient = getCategoryGradient(product.nombre_categoria);
+  const categoryEmoji = getCategoryEmoji(product.nombre_categoria);
 
   return (
     <motion.div
@@ -52,8 +114,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {imageError || !product.imagen_url ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600">
-            <Package className="w-20 h-20 text-gray-300 dark:text-gray-500" />
+          <div className={`absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br ${categoryGradient}`}>
+            <div className="text-7xl mb-2">
+              {categoryEmoji}
+            </div>
           </div>
         ) : (
           <img

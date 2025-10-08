@@ -79,23 +79,14 @@ const CatalogPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-20">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Catálogo de Productos
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Explora {totalItems.toLocaleString()} productos de Mercadona y crea tu lista personalizada
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-14 lg:pt-16">
+      <div className="container mx-auto px-4 py-4">
 
         {/* Layout: Sidebar Filters (Desktop) + Content */}
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar con filtros - Sticky en Desktop */}
           <aside className="w-full lg:w-80 flex-shrink-0">
-            <div className="lg:sticky lg:top-24">
+            <div className="lg:sticky lg:top-20">
               <ProductFilters
                 categories={categories}
                 filters={filters}

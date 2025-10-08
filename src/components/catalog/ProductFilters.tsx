@@ -2,6 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Search, X, RefreshCw } from 'lucide-react';
 import type { Category, ProductFilters as Filters } from '../../types/cart.types';
 
+// Función para obtener emoji por categoría
+const getCategoryEmoji = (categoria: string): string => {
+  const emojis: Record<string, string> = {
+    'Aceite, especias y salsas': '🫒',
+    'Agua y refrescos': '💧',
+    'Aperitivos': '🍿',
+    'Arroz, legumbres y pasta': '🍚',
+    'Azúcar, caramelos y chocolate': '🍫',
+    'Bebé': '👶',
+    'Bodega': '🍷',
+    'Cacao, café e infusiones': '☕',
+    'Carne': '🥩',
+    'Cereales y galletas': '🍪',
+    'Charcutería y quesos': '🧀',
+    'Congelados': '🧊',
+    'Conservas, caldos y cremas': '🥫',
+    'Cuidado del cabello': '💆',
+    'Cuidado facial y corporal': '🧴',
+    'Droguería y parafarmacia': '💊',
+    'Frescos': '🥗',
+    'Huevos, leche y mantequilla': '🥛',
+    'Limpieza': '🧽',
+    'Panadería y pastelería': '🍞',
+    'Pescado': '🐟',
+    'Platos preparados': '🍱',
+    'Yogures y postres': '🍮',
+  };
+  return emojis[categoria] || '📦';
+};
+
 interface ProductFiltersProps {
   categories: Category[];
   filters: Filters;
@@ -82,20 +112,17 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const hasActiveFilters = filters.categoriaId || filters.subcategoriaId || filters.precioMin || filters.precioMax || filters.searchTerm;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
       {/* Título del sidebar - Solo en desktop */}
-      <div className="hidden lg:block mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+      <div className="hidden lg:block mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Search className="w-5 h-5 text-blue-600" />
           Filtrar Productos
         </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Refina tu búsqueda
-        </p>
       </div>
 
       {/* Layout: Vertical en Desktop, Stack en Mobile */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Búsqueda */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -108,7 +135,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Nombre del producto..."
-              className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+              className="w-full pl-12 pr-12 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all text-sm"
             />
             {searchTerm && (
               <button
@@ -139,12 +166,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
           <select
             value={selectedCategory || ''}
             onChange={(e) => handleCategoryChange(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all cursor-pointer"
+            className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all cursor-pointer text-sm"
           >
             <option value="">📂 Todas las categorías</option>
             {categories.map((cat) => (
               <option key={cat.id_categoria} value={cat.id_categoria}>
-                {cat.nombre_categoria}
+                {getCategoryEmoji(cat.nombre_categoria)} {cat.nombre_categoria}
               </option>
             ))}
           </select>
@@ -159,7 +186,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
             value={filters.subcategoriaId || ''}
             onChange={(e) => handleSubcategoryChange(e.target.value)}
             disabled={!selectedCategory}
-            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             <option value="">🏷️ Todas las subcategorías</option>
             {subcategories.map((subcat) => (
@@ -183,7 +210,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 onChange={(e) => setPrecioMin(e.target.value)}
                 onBlur={handlePriceChange}
                 placeholder="Mín €"
-                className="w-full px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all text-sm"
                 min="0"
                 step="0.01"
               />
@@ -195,7 +222,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 onChange={(e) => setPrecioMax(e.target.value)}
                 onBlur={handlePriceChange}
                 placeholder="Máx €"
-                className="w-full px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all text-sm"
                 min="0"
                 step="0.01"
               />
@@ -207,10 +234,10 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         {hasActiveFilters && (
           <button
             onClick={handleResetFilters}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 rounded-xl transition-all duration-200 text-gray-700 dark:text-gray-300 font-semibold shadow-sm hover:shadow-md"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 rounded-xl transition-all duration-200 text-gray-700 dark:text-gray-300 font-semibold shadow-sm hover:shadow-md text-sm"
             title="Limpiar todos los filtros"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4" />
             <span>Limpiar Filtros</span>
           </button>
         )}
