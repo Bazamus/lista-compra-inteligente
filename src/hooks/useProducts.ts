@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, normalizeText } from '../lib/supabase';
-import { fuzzySearchProducts, getSuggestions, hasTypo } from '../utils/fuzzySearch';
+import { fuzzySearchProducts, getSuggestions } from '../utils/fuzzySearch';
 import type { CartProduct, ProductFilters, Category } from '../types/cart.types';
 
 export const useProducts = () => {
@@ -49,8 +49,12 @@ export const useProducts = () => {
 
     try {
       const offsetNum = (page - 1) * pageSize;
+      const hasSearchTerm = filters.searchTerm && filters.searchTerm.trim().length > 0;
 
-      // BÚSQUEDA OPTIMIZADA: Usar SQL con ILIKE para búsqueda case-insensitive
+      // ESTRATEGIA HÍBRIDA:
+      // - Si hay búsqueda: traer más productos para filtrar con normalización
+      // - Si NO hay búsqueda: paginación normal en BD
+
       let query = supabase
         .from('productos')
         .select(`
@@ -74,24 +78,7 @@ export const useProducts = () => {
         `, { count: 'exact' })
         .eq('activo', true);
 
-      // 1. BÚSQUEDA POR TÉRMINO (multi-palabra + coincidencia parcial)
-      if (filters.searchTerm && filters.searchTerm.trim()) {
-        const searchTerm = normalizeText(filters.searchTerm.trim());
-
-        // Búsqueda multi-palabra: "Bote Garban" → buscar productos que contengan ambas palabras
-        const palabras = searchTerm.split(/\s+/).filter(p => p.length > 0);
-
-        if (palabras.length === 1) {
-          // Búsqueda simple: usar ILIKE para coincidencia parcial
-          query = query.ilike('nombre_producto', `%${palabras[0]}%`);
-        } else {
-          // Búsqueda multi-palabra: filtrar en frontend después (Supabase no soporta AND múltiple con ILIKE)
-          // Por ahora buscamos con la primera palabra y refinamos después
-          query = query.ilike('nombre_producto', `%${palabras[0]}%`);
-        }
-      }
-
-      // 2. FILTROS DE CATEGORÍA/SUBCATEGORÍA
+      // 1. FILTROS DE CATEGORÍA/SUBCATEGORÍA (siempre se aplican en BD)
       if (filters.categoriaId) {
         query = query.eq('subcategorias.categorias.id_categoria', filters.categoriaId);
       }
@@ -100,7 +87,7 @@ export const useProducts = () => {
         query = query.eq('subcategorias.id_subcategoria', filters.subcategoriaId);
       }
 
-      // 3. FILTROS DE PRECIO
+      // 2. FILTROS DE PRECIO (siempre se aplican en BD)
       if (filters.precioMin !== undefined) {
         query = query.gte('precio_por_unidad', filters.precioMin);
       }
@@ -109,41 +96,63 @@ export const useProducts = () => {
         query = query.lte('precio_por_unidad', filters.precioMax);
       }
 
-      // 4. ORDENAMIENTO (si no hay búsqueda, ordenar por nombre)
-      if (!filters.searchTerm) {
-        const orderField = filters.ordenarPor?.includes('precio') ? 'precio_por_unidad' : 'nombre_producto';
-        const orderAsc = !filters.ordenarPor?.includes('desc');
-        query = query.order(orderField, { ascending: orderAsc });
+      // 3. ORDENAMIENTO
+      const orderField = filters.ordenarPor?.includes('precio') ? 'precio_por_unidad' : 'nombre_producto';
+      const orderAsc = !filters.ordenarPor?.includes('desc');
+      query = query.order(orderField, { ascending: orderAsc });
+
+      // 4. PAGINACIÓN: Solo si NO hay búsqueda
+      // Si hay búsqueda, traemos todos los productos para filtrar con normalización
+      if (!hasSearchTerm) {
+        query = query.range(offsetNum, offsetNum + pageSize - 1);
       }
 
-      // Ejecutar query SIN paginación aún (para poder aplicar fuzzy search y priorización)
-      const { data: productosRaw, error } = await query;
+      // Ejecutar query
+      // Si NO hay búsqueda, necesitamos el count para paginación
+      let totalCountBD = 0;
+      let productosRaw: any[] = [];
 
-      if (error) throw error;
+      if (!hasSearchTerm) {
+        // Sin búsqueda: query con count y paginación
+        const result = await query;
+        if (result.error) throw result.error;
+        productosRaw = result.data || [];
+        totalCountBD = result.count || 0;
+      } else {
+        // Con búsqueda: query sin count (traemos todos para filtrar)
+        const result = await query;
+        if (result.error) throw result.error;
+        productosRaw = result.data || [];
+      }
 
-      let productos = productosRaw || [];
+      let productos = productosRaw;
 
-      // 5. POST-PROCESAMIENTO: Búsqueda multi-palabra y fuzzy matching
+      // 5. POST-PROCESAMIENTO: Búsqueda normalizada (sin acentos) + multi-palabra + fuzzy matching
       if (filters.searchTerm && filters.searchTerm.trim()) {
         const searchTerm = normalizeText(filters.searchTerm.trim());
         const palabras = searchTerm.split(/\s+/).filter(p => p.length > 0);
 
-        // Si hay múltiples palabras, filtrar productos que contengan TODAS las palabras
-        if (palabras.length > 1) {
-          productos = productos.filter((p: any) => {
-            const nombreNormalizado = normalizeText(p.nombre_producto);
+        // FILTRADO CON NORMALIZACIÓN (sin discriminar acentos)
+        // "Sandia" encontrará "Sandía" porque ambos se normalizan a "sandia"
+        productos = productos.filter((p: any) => {
+          const nombreNormalizado = normalizeText(p.nombre_producto);
+
+          if (palabras.length === 1) {
+            // Búsqueda simple: coincidencia parcial normalizada
+            return nombreNormalizado.includes(searchTerm);
+          } else {
+            // Búsqueda multi-palabra: TODAS las palabras deben estar presentes
             return palabras.every(palabra => nombreNormalizado.includes(palabra));
-          });
-        }
+          }
+        });
 
-        // 5.1. FUZZY SEARCH: Si hay pocos resultados, aplicar búsqueda tolerante a errores
-        if (productos.length === 0 || (productos.length < 3 && searchTerm.length >= 3)) {
-          // Verificar si probablemente hay un error de escritura
-          const tieneErrorEscritura = hasTypo(productosRaw || [], filters.searchTerm);
+        // 5.1. FUZZY SEARCH: Si NO hay resultados, aplicar búsqueda tolerante a errores
+        if (productos.length === 0 && searchTerm.length >= 3) {
+          // Aplicar fuzzy search para encontrar productos similares
+          const resultadosFuzzy = fuzzySearchProducts(productosRaw || [], filters.searchTerm, 50);
 
-          if (tieneErrorEscritura) {
-            // Aplicar fuzzy search para encontrar productos similares
-            productos = fuzzySearchProducts(productosRaw || [], filters.searchTerm, 50);
+          if (resultadosFuzzy.length > 0) {
+            productos = resultadosFuzzy;
 
             // Generar sugerencias de corrección
             const sugerencias = getSuggestions(productosRaw || [], filters.searchTerm, 3);
@@ -182,8 +191,14 @@ export const useProducts = () => {
       }
 
       // 7. CONTEO TOTAL Y PAGINACIÓN
-      const totalCount = productos.length;
-      const paginatedProducts = productos.slice(offsetNum, offsetNum + pageSize);
+      // Si hay búsqueda: count de productos filtrados
+      // Si NO hay búsqueda: count de BD
+      const totalCount = hasSearchTerm ? productos.length : totalCountBD;
+
+      // Paginación: Solo si hay búsqueda (si no, ya viene paginado de BD)
+      const paginatedProducts = hasSearchTerm
+        ? productos.slice(offsetNum, offsetNum + pageSize)
+        : productos;
 
       // 8. TRANSFORMAR PRODUCTOS
       const transformedProducts = paginatedProducts.map((producto: any) => ({
