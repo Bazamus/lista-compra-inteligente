@@ -78,7 +78,28 @@ export const useProducts = () => {
         `, { count: 'exact' })
         .eq('activo', true);
 
-      // 1. FILTROS DE CATEGORÍA/SUBCATEGORÍA (siempre se aplican en BD)
+      // 1. BÚSQUEDA CON PRE-FILTRO SQL + variantes de acentos
+      if (hasSearchTerm) {
+        const searchOriginal = filters.searchTerm!.trim();
+        const searchNormalized = normalizeText(searchOriginal);
+
+        // Crear variantes del término de búsqueda para cubrir casos con/sin acentos
+        const variantes = new Set([
+          searchOriginal,
+          searchNormalized,
+          searchOriginal.toLowerCase(),
+          searchNormalized.toLowerCase(),
+        ]);
+
+        // Construir query OR para buscar cualquiera de las variantes
+        const orConditions = Array.from(variantes)
+          .map(v => `nombre_producto.ilike.%${v}%`)
+          .join(',');
+
+        query = query.or(orConditions);
+      }
+
+      // 2. FILTROS DE CATEGORÍA/SUBCATEGORÍA
       if (filters.categoriaId) {
         query = query.eq('subcategorias.categorias.id_categoria', filters.categoriaId);
       }
@@ -87,7 +108,7 @@ export const useProducts = () => {
         query = query.eq('subcategorias.id_subcategoria', filters.subcategoriaId);
       }
 
-      // 2. FILTROS DE PRECIO (siempre se aplican en BD)
+      // 3. FILTROS DE PRECIO
       if (filters.precioMin !== undefined) {
         query = query.gte('precio_por_unidad', filters.precioMin);
       }
@@ -96,13 +117,12 @@ export const useProducts = () => {
         query = query.lte('precio_por_unidad', filters.precioMax);
       }
 
-      // 3. ORDENAMIENTO
+      // 4. ORDENAMIENTO
       const orderField = filters.ordenarPor?.includes('precio') ? 'precio_por_unidad' : 'nombre_producto';
       const orderAsc = !filters.ordenarPor?.includes('desc');
       query = query.order(orderField, { ascending: orderAsc });
 
-      // 4. PAGINACIÓN: Solo si NO hay búsqueda
-      // Si hay búsqueda, traemos todos los productos para filtrar con normalización
+      // 5. PAGINACIÓN: Solo si NO hay búsqueda
       if (!hasSearchTerm) {
         query = query.range(offsetNum, offsetNum + pageSize - 1);
       }

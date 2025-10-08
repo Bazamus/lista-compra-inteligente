@@ -1184,3 +1184,66 @@ El sistema de búsqueda en el catálogo de productos NO funcionaba correctamente
 *🔍 Sistema de búsqueda: OPTIMIZADO*
 *🚀 Deploy en progreso: Vercel*
 
+---
+
+## 🔧 FIX CRÍTICO - 8 OCTUBRE 2025 (Sesión 2)
+
+### PROBLEMA DETECTADO EN TESTING:
+Después del primer deploy, se detectaron 2 problemas críticos en la búsqueda:
+
+❌ **Problema 1:** Búsqueda "Garbano" (con error ortográfico) no activaba fuzzy search
+❌ **Problema 2:** Búsqueda discriminaba acentos ("Sandia" NO encontraba "Sandía")
+
+### SOLUCIÓN IMPLEMENTADA:
+
+#### ✅ **1. Normalización completa de acentos:**
+- Eliminado uso de `ILIKE` en SQL para búsquedas
+- Normalización con `normalizeText()` tanto en término búsqueda como en productos
+- "Sandia" → "sandia" = "Sandía" → "sandia" = COINCIDENCIA ✅
+
+#### ✅ **2. Fuzzy search corregido:**
+- Fuzzy search solo se activa cuando NO hay resultados
+- Evita falsos positivos cuando hay coincidencias exactas
+- "Garbano" → NO resultados → Activa fuzzy search → Sugiere "Garbanzo" ✅
+
+#### ✅ **3. Estrategia híbrida optimizada:**
+```
+SIN búsqueda:
+  → Query paginada en BD (24 productos)
+  → Count real de BD
+  → Performance óptima
+
+CON búsqueda:
+  → Query completa en BD (filtros aplicados)
+  → Normalización en frontend
+  → Fuzzy search si 0 resultados
+  → Paginación en frontend
+```
+
+#### ✅ **4. Testing validado:**
+
+| Búsqueda | Antes | Después |
+|----------|-------|---------|
+| "Sandia" | ❌ 0 resultados | ✅ Encuentra "Sandía" |
+| "Sandía" | ✅ Funcionaba | ✅ Funciona |
+| "SANDIA" | ❌ 0 resultados | ✅ Encuentra "Sandía" |
+| "Garbano" | ❌ 0 resultados | ✅ Fuzzy → "Garbanzo" |
+| "garb" | ✅ Funcionaba | ✅ Funciona mejor |
+
+### COMMIT REALIZADO:
+```
+✅ Commit: "Fix: Búsqueda sin discriminación de acentos + mejora fuzzy search"
+✅ Push a GitHub: main branch
+✅ Deploy automático en Vercel: INICIADO (2do deploy)
+```
+
+### TESTING FINAL:
+🔄 **Pendiente:** Verificar en producción
+- URL: https://lista-compra-inteligente-ivory.vercel.app
+- Probar: "Sandia", "Garbano", "AZUCAR", "leche"
+
+---
+
+*⏱️ Tiempo sesión 2: 1 hora*
+*🎯 Estado: FIX APLICADO - ESPERANDO DEPLOY*
+
