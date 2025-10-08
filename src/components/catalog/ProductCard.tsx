@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, ShoppingCart, Info, Package } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Info } from 'lucide-react';
 import type { CartProduct } from '../../types/cart.types';
 
 interface ProductCardProps {
