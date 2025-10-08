@@ -78,25 +78,19 @@ export const useProducts = () => {
         `, { count: 'exact' })
         .eq('activo', true);
 
-      // 1. BÚSQUEDA CON PRE-FILTRO SQL + variantes de acentos
+      // 1. BÚSQUEDA: Pre-filtro amplio en SQL para reducir dataset
+      // Luego refinamos en frontend con normalización perfecta
       if (hasSearchTerm) {
-        const searchOriginal = filters.searchTerm!.trim();
-        const searchNormalized = normalizeText(searchOriginal);
+        const searchNormalized = normalizeText(filters.searchTerm!.trim());
 
-        // Crear variantes del término de búsqueda para cubrir casos con/sin acentos
-        const variantes = new Set([
-          searchOriginal,
-          searchNormalized,
-          searchOriginal.toLowerCase(),
-          searchNormalized.toLowerCase(),
-        ]);
+        // Pre-filtro: Buscar por primera letra para reducir dataset
+        // Esto trae ~100-500 productos en lugar de 4,429
+        const firstLetter = searchNormalized.charAt(0);
 
-        // Construir query OR para buscar cualquiera de las variantes
-        const orConditions = Array.from(variantes)
-          .map(v => `nombre_producto.ilike.%${v}%`)
-          .join(',');
-
-        query = query.or(orConditions);
+        if (firstLetter) {
+          // Buscar productos que empiecen con la primera letra (case-insensitive)
+          query = query.ilike('nombre_producto', `${firstLetter}%`);
+        }
       }
 
       // 2. FILTROS DE CATEGORÍA/SUBCATEGORÍA
