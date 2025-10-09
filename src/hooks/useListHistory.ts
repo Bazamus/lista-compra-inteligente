@@ -71,7 +71,9 @@ export const useListHistory = () => {
         tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual'),
       };
 
-      let lists = [...savedLists];
+      // Cargar listas actuales DIRECTAMENTE del localStorage
+      const stored = localStorage.getItem(STORAGE_KEY);
+      let lists: SavedList[] = stored ? JSON.parse(stored) : [];
 
       // Siempre añadir como nueva lista (sin verificar duplicados)
       lists.unshift(newList);

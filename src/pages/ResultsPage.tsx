@@ -46,17 +46,6 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const { lista, menus, recomendaciones } = resultado;
   const { saveList } = useListHistory();
 
-  // Guardar lista automáticamente al cargar la página
-  useEffect(() => {
-    try {
-      saveList(resultado);
-      setListaSaved(true);
-      setTimeout(() => setListaSaved(false), 3000);
-    } catch (error) {
-      console.error('Error al guardar lista automáticamente:', error);
-    }
-  }, []); // Solo ejecutar una vez al montar
-
   // Cerrar menú de exportación al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
