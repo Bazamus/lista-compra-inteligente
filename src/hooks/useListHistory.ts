@@ -49,9 +49,18 @@ export const useListHistory = () => {
 
   const saveList = (resultado: any, nombre?: string): string => {
     try {
+      // Generar nombre único con timestamp
+      const defaultName = `Lista del ${new Date().toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`;
+
       const newList: SavedList = {
         id: `list_${Date.now()}`,
-        nombre: nombre || resultado.lista?.nombre || `Lista del ${new Date().toLocaleDateString('es-ES')}`,
+        nombre: nombre || resultado.lista?.nombre || defaultName,
         fecha: new Date().toISOString(),
         productos: resultado.productos,
         menus: resultado.menus,
@@ -64,13 +73,8 @@ export const useListHistory = () => {
 
       let lists = [...savedLists];
 
-      // Verificar si existe una lista con el mismo nombre
-      const existingIndex = lists.findIndex(l => l.nombre === newList.nombre);
-      if (existingIndex !== -1) {
-        lists[existingIndex] = newList;
-      } else {
-        lists.unshift(newList);
-      }
+      // Siempre añadir como nueva lista (sin verificar duplicados)
+      lists.unshift(newList);
 
       // Limitar a MAX_LISTS listas
       if (lists.length > MAX_LISTS) {
