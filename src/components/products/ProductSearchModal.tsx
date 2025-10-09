@@ -1,7 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Plus, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import { productosApi, categoriasApi } from '../../lib/api';
+import { productosApi, categoriasApi, type Categoria, type Subcategoria } from '../../lib/api';
+
+// Función para obtener gradiente por categoría
+const getCategoryGradient = (categoria: string): string => {
+  const gradients: Record<string, string> = {
+    'Aceite, especias y salsas': 'from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30',
+    'Agua y refrescos': 'from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30',
+    'Aperitivos': 'from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30',
+    'Arroz, legumbres y pasta': 'from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30',
+    'Azúcar, caramelos y chocolate': 'from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30',
+    'Bebé': 'from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30',
+    'Bodega': 'from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30',
+    'Cacao, café e infusiones': 'from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30',
+    'Carne': 'from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30',
+    'Cereales y galletas': 'from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30',
+    'Charcutería y quesos': 'from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30',
+    'Congelados': 'from-cyan-100 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30',
+    'Conservas, caldos y cremas': 'from-green-100 to-lime-100 dark:from-green-900/30 dark:to-lime-900/30',
+    'Cuidado del cabello': 'from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30',
+    'Cuidado facial y corporal': 'from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30',
+    'Droguería y parafarmacia': 'from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30',
+    'Frescos': 'from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30',
+    'Huevos, leche y mantequilla': 'from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30',
+    'Limpieza': 'from-teal-100 to-blue-100 dark:from-teal-900/30 dark:to-blue-900/30',
+    'Panadería y pastelería': 'from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30',
+    'Pescado': 'from-blue-100 to-teal-100 dark:from-blue-900/30 dark:to-teal-900/30',
+    'Platos preparados': 'from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30',
+    'Yogures y postres': 'from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30',
+  };
+  return gradients[categoria] || 'from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600';
+};
+
+// Función para obtener emoji por categoría
+const getCategoryEmoji = (categoria: string): string => {
+  const emojis: Record<string, string> = {
+    'Aceite, especias y salsas': '🫒',
+    'Agua y refrescos': '💧',
+    'Aperitivos': '🍿',
+    'Arroz, legumbres y pasta': '🍚',
+    'Azúcar, caramelos y chocolate': '🍫',
+    'Bebé': '👶',
+    'Bodega': '🍷',
+    'Cacao, café e infusiones': '☕',
+    'Carne': '🥩',
+    'Cereales y galletas': '🍪',
+    'Charcutería y quesos': '🧀',
+    'Congelados': '🧊',
+    'Conservas, caldos y cremas': '🥫',
+    'Cuidado del cabello': '💆',
+    'Cuidado facial y corporal': '🧴',
+    'Droguería y parafarmacia': '💊',
+    'Frescos': '🥗',
+    'Huevos, leche y mantequilla': '🥛',
+    'Limpieza': '🧽',
+    'Panadería y pastelería': '🍞',
+    'Pescado': '🐟',
+    'Platos preparados': '🍱',
+    'Yogures y postres': '🍮',
+  };
+  return emojis[categoria] || '📦';
+};
 
 interface Producto {
   id_producto: number;
@@ -11,17 +71,13 @@ interface Producto {
   unidad_medida: string;
   precio_por_unidad: number;
   cantidad_unidad_medida: number;
+  imagen_url?: string;
   subcategorias: {
     nombre_subcategoria: string;
     categorias: {
       nombre_categoria: string;
     };
   };
-}
-
-interface Categoria {
-  id_categoria: number;
-  nombre_categoria: string;
 }
 
 interface ProductSearchModalProps {
@@ -44,9 +100,11 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [filtros, setFiltros] = useState({
     categoria: '',
+    subcategoria: '',
     precio_min: '',
     precio_max: ''
   });
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
 
   // Cargar categorías al abrir el modal
@@ -56,11 +114,32 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
     }
   }, [isOpen]);
 
-  // Buscar productos cuando cambie el término de búsqueda o filtros
+  // Cargar subcategorías cuando cambie la categoría
   useEffect(() => {
-    if (isOpen && searchTerm.length >= 2) {
+    if (filtros.categoria) {
+      const categoriaSeleccionada = categorias.find(c => c.nombre_categoria === filtros.categoria);
+      setSubcategorias(categoriaSeleccionada?.subcategorias || []);
+      // Resetear subcategoría seleccionada si no existe en la nueva lista
+      if (filtros.subcategoria) {
+        const subcategoriaExiste = categoriaSeleccionada?.subcategorias?.some(
+          s => s.nombre_subcategoria === filtros.subcategoria
+        );
+        if (!subcategoriaExiste) {
+          setFiltros(prev => ({ ...prev, subcategoria: '' }));
+        }
+      }
+    } else {
+      setSubcategorias([]);
+      setFiltros(prev => ({ ...prev, subcategoria: '' }));
+    }
+  }, [filtros.categoria, categorias]);
+
+  // Buscar productos cuando cambie el término de búsqueda o filtros
+  // Permitir búsqueda con solo categoría (sin necesidad de texto)
+  useEffect(() => {
+    if (isOpen && (searchTerm.length >= 2 || filtros.categoria)) {
       buscarProductos();
-    } else if (isOpen && searchTerm.length === 0) {
+    } else if (isOpen && searchTerm.length === 0 && !filtros.categoria) {
       setProductos([]);
     }
   }, [searchTerm, filtros, isOpen]);
@@ -78,8 +157,9 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
     setLoading(true);
     try {
       const response = await productosApi.obtener({
-        search: searchTerm,
+        search: searchTerm || undefined,
         categoria: filtros.categoria || undefined,
+        subcategoria: filtros.subcategoria || undefined,
         precio_min: filtros.precio_min ? parseFloat(filtros.precio_min) : undefined,
         precio_max: filtros.precio_max ? parseFloat(filtros.precio_max) : undefined,
         limit: 50
@@ -106,9 +186,11 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
   const resetFiltros = () => {
     setFiltros({
       categoria: '',
+      subcategoria: '',
       precio_min: '',
       precio_max: ''
     });
+    setSubcategorias([]);
   };
 
   if (!isOpen) return null;
@@ -175,7 +257,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4"
+                  className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -190,7 +272,27 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                       <option value="">Todas las categorías</option>
                       {categorias.map(cat => (
                         <option key={cat.id_categoria} value={cat.nombre_categoria}>
-                          {cat.nombre_categoria}
+                          {getCategoryEmoji(cat.nombre_categoria)} {cat.nombre_categoria}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Subcategoría
+                    </label>
+                    <select
+                      value={filtros.subcategoria}
+                      onChange={(e) => setFiltros(prev => ({ ...prev, subcategoria: e.target.value }))}
+                      disabled={!filtros.categoria}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                               bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Todas las subcategorías</option>
+                      {subcategorias.map(sub => (
+                        <option key={sub.id_subcategoria} value={sub.nombre_subcategoria}>
+                          {sub.nombre_subcategoria}
                         </option>
                       ))}
                     </select>
@@ -230,7 +332,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
             </AnimatePresence>
 
             {/* Reset Filters */}
-            {(filtros.categoria || filtros.precio_min || filtros.precio_max) && (
+            {(filtros.categoria || filtros.subcategoria || filtros.precio_min || filtros.precio_max) && (
               <button
                 onClick={resetFiltros}
                 className="mt-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
@@ -249,8 +351,8 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
               </div>
             ) : productos.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                {searchTerm.length < 2 
-                  ? 'Escribe al menos 2 caracteres para buscar'
+                {searchTerm.length < 2 && !filtros.categoria
+                  ? 'Escribe al menos 2 caracteres o selecciona una categoría para buscar'
                   : 'No se encontraron productos'
                 }
               </div>
@@ -258,19 +360,44 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
               <div className="space-y-3">
                 {productos.map((producto) => {
                   const yaExiste = existingProductIds.has(producto.id_producto);
+                  const categoryGradient = getCategoryGradient(producto.subcategorias.categorias.nombre_categoria);
+                  const categoryEmoji = getCategoryEmoji(producto.subcategorias.categorias.nombre_categoria);
+
                   return (
                     <motion.div
                       key={producto.id_producto}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700
+                      className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700
                                rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 dark:text-white">
+                      {/* Imagen en miniatura */}
+                      <div className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br ${categoryGradient} flex items-center justify-center`}>
+                        {producto.imagen_url ? (
+                          <img
+                            src={producto.imagen_url}
+                            alt={producto.nombre_producto}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Si falla la imagen, mostrar emoji
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextSibling) {
+                                (e.currentTarget.nextSibling as HTMLElement).style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : null}
+                        <div className={`text-3xl ${producto.imagen_url ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                          {categoryEmoji}
+                        </div>
+                      </div>
+
+                      {/* Información del producto */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 dark:text-white truncate">
                           {producto.nombre_producto}
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                           {producto.subcategorias.categorias.nombre_categoria} • {producto.formato_venta}
                         </p>
                         <p className="text-sm font-medium text-green-600 dark:text-green-400">
@@ -278,7 +405,8 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      {/* Acciones */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         {!yaExiste && (
                           <div className="flex items-center gap-2">
                             <input
