@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Plus, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { productosApi, categoriasApi, type Categoria, type Subcategoria } from '../../lib/api';
+import ProductDetailModal from '../catalog/ProductDetailModal';
+import type { CartProduct } from '../../types/cart.types';
 
 // Función para obtener gradiente por categoría
 const getCategoryGradient = (categoria: string): string => {
@@ -72,6 +74,7 @@ interface Producto {
   precio_por_unidad: number;
   cantidad_unidad_medida: number;
   imagen_url?: string;
+  url_enlace?: string;
   subcategorias: {
     nombre_subcategoria: string;
     categorias: {
@@ -106,6 +109,8 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
   });
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
+  const [selectedProduct, setSelectedProduct] = useState<CartProduct | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Cargar categorías al abrir el modal
   useEffect(() => {
@@ -170,6 +175,39 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
       setProductos([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Convertir Producto a CartProduct
+  const convertToCartProduct = (producto: Producto): CartProduct => {
+    return {
+      id_producto: producto.id_producto,
+      nombre_producto: producto.nombre_producto,
+      precio_por_unidad: producto.precio_por_unidad,
+      unidad_medida: producto.unidad_medida,
+      cantidad_unidad_medida: producto.cantidad_unidad_medida,
+      formato_venta: producto.formato_venta,
+      precio_formato_venta: producto.precio_formato_venta,
+      imagen_url: producto.imagen_url,
+      url_enlace: producto.url_enlace,
+      nombre_categoria: producto.subcategorias.categorias.nombre_categoria,
+      nombre_subcategoria: producto.subcategorias.nombre_subcategoria,
+    };
+  };
+
+  const handleProductClick = (producto: Producto) => {
+    const cartProduct = convertToCartProduct(producto);
+    setSelectedProduct(cartProduct);
+    setShowDetailModal(true);
+  };
+
+  const handleAddFromDetailModal = (product: CartProduct, quantity: number) => {
+    // Convertir de vuelta a Producto para mantener compatibilidad con onAddProduct
+    const productoOriginal = productos.find(p => p.id_producto === product.id_producto);
+    if (productoOriginal) {
+      onAddProduct(productoOriginal, quantity);
+      setShowDetailModal(false);
+      setSelectedProduct(null);
     }
   };
 
@@ -371,8 +409,11 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                       className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700
                                rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      {/* Imagen en miniatura */}
-                      <div className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br ${categoryGradient} flex items-center justify-center`}>
+                      {/* Imagen en miniatura - CLICKEABLE */}
+                      <div
+                        onClick={() => handleProductClick(producto)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br ${categoryGradient} flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
+                      >
                         {producto.imagen_url ? (
                           <img
                             src={producto.imagen_url}
@@ -392,8 +433,11 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Información del producto */}
-                      <div className="flex-1 min-w-0">
+                      {/* Información del producto - CLICKEABLE */}
+                      <div
+                        onClick={() => handleProductClick(producto)}
+                        className="flex-1 min-w-0 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      >
                         <h3 className="font-medium text-gray-900 dark:text-white truncate">
                           {producto.nombre_producto}
                         </h3>
@@ -442,6 +486,19 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Modal de detalles del producto */}
+      <ProductDetailModal
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedProduct(null);
+        }}
+        product={selectedProduct}
+        currentQuantity={0}
+        onAddToCart={handleAddFromDetailModal}
+        onUpdateQuantity={() => {}}
+      />
     </AnimatePresence>
   );
 };
