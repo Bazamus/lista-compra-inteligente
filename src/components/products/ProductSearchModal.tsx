@@ -255,21 +255,21 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
           exit={{ opacity: 0, y: "100%" }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
           className="bg-white dark:bg-gray-800 rounded-t-3xl md:rounded-2xl shadow-2xl
-                   w-full md:max-w-4xl h-[94vh] md:h-auto md:max-h-[90vh]
+                   w-full max-w-full md:max-w-4xl h-[94vh] md:h-auto md:max-h-[90vh]
                    flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 relative">
             {/* Indicador móvil drag */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full md:hidden" />
 
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white truncate pr-2">
               Buscar Productos
             </h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="flex-shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <X className="w-5 h-5 md:w-6 md:h-6 text-gray-500" />
             </button>
@@ -311,14 +311,14 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                   exit={{ height: 0, opacity: 0 }}
                   className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <div className="min-w-0">
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Categoría
                     </label>
                     <select
                       value={filtros.categoria}
                       onChange={(e) => setFiltros(prev => ({ ...prev, categoria: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                      className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg
                                bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="">Todas las categorías</option>
@@ -330,15 +330,15 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <div className="min-w-0">
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Subcategoría
                     </label>
                     <select
                       value={filtros.subcategoria}
                       onChange={(e) => setFiltros(prev => ({ ...prev, subcategoria: e.target.value }))}
                       disabled={!filtros.categoria}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                      className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg
                                bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="">Todas las subcategorías</option>
@@ -350,8 +350,8 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <div className="min-w-0">
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Precio mínimo (€)
                     </label>
                     <input
@@ -360,13 +360,13 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                       placeholder="0.00"
                       value={filtros.precio_min}
                       onChange={(e) => setFiltros(prev => ({ ...prev, precio_min: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                      className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg
                                bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <div className="min-w-0">
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Precio máximo (€)
                     </label>
                     <input
@@ -375,7 +375,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                       placeholder="100.00"
                       value={filtros.precio_max}
                       onChange={(e) => setFiltros(prev => ({ ...prev, precio_max: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                      className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg
                                bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
