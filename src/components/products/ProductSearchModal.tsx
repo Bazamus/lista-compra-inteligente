@@ -149,6 +149,13 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
     }
   }, [searchTerm, filtros, isOpen]);
 
+  // Auto-colapsar filtros en móvil cuando hay resultados
+  useEffect(() => {
+    if (productos.length > 0 && window.innerWidth < 768) {
+      setShowFilters(false);
+    }
+  }, [productos]);
+
   const cargarCategorias = async () => {
     try {
       const response = await categoriasApi.obtenerTodas();
@@ -239,26 +246,30 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+          initial={{ scale: 0.9, opacity: 0, y: 100 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 100 }}
+          className="bg-white dark:bg-gray-800 rounded-t-3xl md:rounded-2xl shadow-2xl
+                   w-full max-w-4xl h-[95vh] md:h-auto md:max-h-[90vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
+            {/* Indicador móvil drag */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full md:hidden" />
+
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
               Buscar Productos
             </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              <X className="w-6 h-6 text-gray-500" />
+              <X className="w-5 h-5 md:w-6 md:h-6 text-gray-500" />
             </button>
           </div>
 
@@ -406,74 +417,81 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                       key={producto.id_producto}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700
+                      className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4 p-3 border border-gray-200 dark:border-gray-700
                                rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      {/* Imagen en miniatura - CLICKEABLE */}
-                      <div
-                        onClick={() => handleProductClick(producto)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br ${categoryGradient} flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
-                      >
-                        {producto.imagen_url ? (
-                          <img
-                            src={producto.imagen_url}
-                            alt={producto.nombre_producto}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Si falla la imagen, mostrar emoji
-                              e.currentTarget.style.display = 'none';
-                              if (e.currentTarget.nextSibling) {
-                                (e.currentTarget.nextSibling as HTMLElement).style.display = 'flex';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <div className={`text-3xl ${producto.imagen_url ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
-                          {categoryEmoji}
+                      <div className="flex items-center gap-3 w-full md:w-auto md:flex-1">
+                        {/* Imagen en miniatura - CLICKEABLE */}
+                        <div
+                          onClick={() => handleProductClick(producto)}
+                          className={`flex-shrink-0 w-16 h-16 md:w-16 md:h-16 rounded-lg overflow-hidden bg-gradient-to-br ${categoryGradient} flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
+                        >
+                          {producto.imagen_url ? (
+                            <img
+                              src={producto.imagen_url}
+                              alt={producto.nombre_producto}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Si falla la imagen, mostrar emoji
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.nextSibling) {
+                                  (e.currentTarget.nextSibling as HTMLElement).style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div className={`text-3xl ${producto.imagen_url ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                            {categoryEmoji}
+                          </div>
+                        </div>
+
+                        {/* Información del producto - CLICKEABLE */}
+                        <div
+                          onClick={() => handleProductClick(producto)}
+                          className="flex-1 min-w-0 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        >
+                          <h3 className="font-medium text-sm md:text-base text-gray-900 dark:text-white line-clamp-2 md:truncate">
+                            {producto.nombre_producto}
+                          </h3>
+                          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {producto.formato_venta}
+                          </p>
+                          <p className="text-sm md:text-sm font-medium text-green-600 dark:text-green-400 mt-1">
+                            {producto.precio_formato_venta.toFixed(2)}€
+                          </p>
                         </div>
                       </div>
 
-                      {/* Información del producto - CLICKEABLE */}
-                      <div
-                        onClick={() => handleProductClick(producto)}
-                        className="flex-1 min-w-0 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                      >
-                        <h3 className="font-medium text-gray-900 dark:text-white truncate">
-                          {producto.nombre_producto}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {producto.subcategorias.categorias.nombre_categoria} • {producto.formato_venta}
-                        </p>
-                        <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                          {producto.precio_formato_venta.toFixed(2)}€
-                        </p>
-                      </div>
-
                       {/* Acciones */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 w-full md:w-auto md:flex-shrink-0">
                         {!yaExiste && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 w-full md:w-auto">
                             <input
                               type="number"
                               min="1"
                               value={cantidades[producto.id_producto] || 1}
                               onChange={(e) => updateCantidad(producto.id_producto, parseInt(e.target.value) || 1)}
-                              className="w-16 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded
-                                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-14 md:w-16 px-2 py-1.5 md:py-1 text-center border border-gray-300 dark:border-gray-600 rounded
+                                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                             />
                             <button
-                              onClick={() => handleAddProduct(producto)}
-                              className="flex items-center gap-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white
-                                       rounded-lg transition-colors text-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddProduct(producto);
+                              }}
+                              className="flex items-center justify-center gap-1 flex-1 md:flex-initial px-3 md:px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white
+                                       rounded-lg transition-colors text-sm whitespace-nowrap"
                             >
                               <Plus className="w-4 h-4" />
-                              Añadir
+                              <span className="hidden sm:inline">Añadir</span>
+                              <span className="sm:hidden">+</span>
                             </button>
                           </div>
                         )}
                         {yaExiste && (
-                          <span className="px-3 py-2 bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300
-                                         rounded-lg text-sm">
+                          <span className="w-full md:w-auto text-center px-3 py-2 bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300
+                                         rounded-lg text-xs md:text-sm">
                             Ya en la lista
                           </span>
                         )}

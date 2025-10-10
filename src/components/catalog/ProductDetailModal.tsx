@@ -68,30 +68,35 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
           />
 
-          {/* Modal */}
+          {/* Modal - Bottom sheet en móvil, centrado en desktop */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 100 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-x-4 top-[5%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-4xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95, y: 100 }}
+            className="fixed bottom-0 md:bottom-auto left-0 right-0 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:top-[5%]
+                     md:w-full md:max-w-4xl h-[92vh] md:h-auto md:max-h-[90vh]
+                     bg-white dark:bg-gray-800 rounded-t-3xl md:rounded-2xl shadow-2xl z-[60] overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Detalles del Producto</h2>
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
+              {/* Indicador drag móvil */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full md:hidden" />
+
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Detalles del Producto</h2>
               <button
                 onClick={onClose}
-                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
-              <div className="grid md:grid-cols-2 gap-6 p-6">
+            <div className="overflow-y-auto h-[calc(92vh-70px)] md:h-auto md:max-h-[calc(90vh-120px)]">
+              <div className="grid md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-6">
                 {/* Imagen */}
                 <div className="space-y-4">
                   <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-2xl overflow-hidden flex items-center justify-center">
