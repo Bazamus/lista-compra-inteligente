@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Plus, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { productosApi, categoriasApi, type Categoria, type Subcategoria } from '../../lib/api';
@@ -240,7 +241,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -522,6 +523,8 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
       />
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ProductSearchModal;
