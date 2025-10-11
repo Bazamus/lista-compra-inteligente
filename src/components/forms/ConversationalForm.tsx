@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import type { ConversationalFormProps, FormStep } from '../../types/form.types';
@@ -95,6 +95,11 @@ const ConversationalForm: React.FC<ConversationalFormProps> = ({
     getProgress
   } = useMultiStepForm(FORM_STEPS, initialData);
 
+  // Scroll automático al inicio cuando cambia el paso
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   const renderStepComponent = () => {
     const commonProps = {
       data: formData,
@@ -134,15 +139,11 @@ const ConversationalForm: React.FC<ConversationalFormProps> = ({
       onSubmit(formData as any);
     } else {
       nextStep();
-      // Scroll suave al inicio de la página
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handlePrevStep = () => {
     prevStep();
-    // Scroll suave al inicio de la página
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
