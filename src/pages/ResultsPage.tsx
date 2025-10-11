@@ -292,22 +292,26 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              {/* Header con título y botones adaptado a móvil */}
+              <div className="mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                   <Package className="w-6 h-6" />
                   Lista de compra
                 </h2>
-                <div className="flex gap-2">
+
+                {/* Botones en grid responsive */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                   <button
                     onClick={() => setShowSearchModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    Añadir
+                    <span className="text-sm font-medium">Añadir</span>
                   </button>
+
                   <button
                     onClick={handleSaveList}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
                       listaSaved
                         ? 'bg-green-500 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -328,10 +332,10 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                   </button>
 
                   {/* Menú de exportación */}
-                  <div className="relative">
+                  <div className="relative col-span-1">
                     <button
                       onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                       title="Exportar lista"
                     >
                       <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -339,7 +343,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                     </button>
 
                     {showExportMenu && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10">
+                      <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-20">
                         <button
                           onClick={handleExportPDF}
                           className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-t-lg"
@@ -364,8 +368,12 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                     )}
                   </div>
 
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                    <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <button
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    title="Compartir lista"
+                  >
+                    <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 sm:hidden">Compartir</span>
                   </button>
                 </div>
               </div>
