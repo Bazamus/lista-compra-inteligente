@@ -1,5 +1,7 @@
 import { ArrowRight, Sparkles, Clock, PiggyBank, History, ShoppingCart, Package } from 'lucide-react';
 import { useListHistory } from '../hooks/useListHistory';
+import { useAuth } from '../features/auth/hooks/useAuth';
+import { DemoBanner } from '../features/auth/components/DemoBanner';
 
 interface HomePageProps {
   onStartForm: () => void;
@@ -9,6 +11,7 @@ interface HomePageProps {
 
 export default function HomePage({ onStartForm, onViewHistory, onNavigateToCatalog }: HomePageProps) {
   const { savedLists } = useListHistory();
+  const { isAuthenticated } = useAuth();
 
   const features = [
     {
@@ -40,6 +43,9 @@ export default function HomePage({ onStartForm, onViewHistory, onNavigateToCatal
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Banner Demo - Solo para usuarios no autenticados */}
+      {!isAuthenticated && <DemoBanner />}
+      
       {/* Hero Section - 2 Columnas en Desktop */}
       <section className="container mx-auto px-4 pt-16 md:pt-24 pb-12 md:pb-16">
         <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">

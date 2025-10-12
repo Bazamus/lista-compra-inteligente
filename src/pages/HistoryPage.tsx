@@ -4,6 +4,8 @@ import { History, Home, Trash2, Package } from 'lucide-react';
 import { useListHistory } from '../hooks/useListHistory';
 import ListHistoryCard from '../components/history/ListHistoryCard';
 import type { SavedList } from '../hooks/useListHistory';
+import { useAuth } from '../features/auth/hooks/useAuth';
+import { DemoBanner } from '../features/auth/components/DemoBanner';
 
 interface HistoryPageProps {
   onViewList: (lista: SavedList) => void;
@@ -12,6 +14,7 @@ interface HistoryPageProps {
 
 const HistoryPage: React.FC<HistoryPageProps> = ({ onViewList, onBackToHome }) => {
   const { savedLists, deleteList, updateListName, clearAllLists } = useListHistory();
+  const { isAuthenticated } = useAuth();
   const [showClearConfirm, setShowClearConfirm] = React.useState(false);
 
   const handleClearAll = () => {
@@ -21,6 +24,9 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onViewList, onBackToHome }) =
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+      {/* Banner Demo - Solo para usuarios no autenticados */}
+      {!isAuthenticated && <DemoBanner />}
+      
       {/* Header */}
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -35,6 +41,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onViewList, onBackToHome }) =
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {savedLists.length} {savedLists.length === 1 ? 'lista guardada' : 'listas guardadas'}
+                  {!isAuthenticated && <span className="ml-2 text-orange-600 dark:text-orange-400 font-medium">(Modo Demo: máx. 3 listas temporales)</span>}
                 </p>
               </div>
             </div>

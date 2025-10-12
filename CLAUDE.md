@@ -19,7 +19,10 @@ Aplicación web inteligente para planificación optimizada de listas de compra c
 - Formulario conversacional de 8 pasos para capturar preferencias
 - Base de datos SupaBase con catálogo completo de Mercadona
 - Optimización de presupuesto y recomendaciones personalizadas
-- Aplicación de un solo usuario (sin autenticación)
+- **Sistema multi-usuario con autenticación** (Supabase Auth)
+- **Modo Demo** para usuarios no registrados (localStorage temporal)
+- **Dashboard de administración** con roles (Admin/User)
+- **Features Premium** para usuarios autenticados
 - **Estado:** ✅ DESPLEGADA Y FUNCIONANDO EN PRODUCCIÓN
 
 ## 🚀 Deployment en Producción
@@ -184,9 +187,169 @@ lista-compra-inteligente/
 - Manejar timeouts (generación puede tomar 10-30 segundos)
 
 **Supabase:**
-- Usar cliente configurado en `src/services/supabase.ts`
-- RLS (Row Level Security) deshabilitado para app de usuario único
+- Usar cliente configurado en `src/lib/supabase.ts`
+- RLS (Row Level Security) habilitado en `listas_compra`, `items_lista`
+- RLS temporalmente deshabilitado en `profiles` (para desarrollo)
 - 4,429 productos importados - usar paginación siempre
+
+---
+
+## Sistema de Autenticación
+
+**Arquitectura:** Multi-usuario con roles (Admin/User)
+**Provider:** Supabase Auth
+**Modo Demo:** Usuarios no autenticados pueden probar la app (máx 3 listas temporales)
+
+### Características:
+- Login/Register con email + contraseña
+- Row Level Security (RLS) en tablas sensibles
+- Listas vinculadas con `user_id` en BD
+- Features Premium para usuarios autenticados
+- Dashboard Admin para gestión de usuarios
+- Sistema híbrido: BD para usuarios autenticados, localStorage para modo Demo
+
+### Estructura:
+```
+src/features/auth/          # Sistema de autenticación
+├── components/
+│   ├── LoginForm.tsx       # Formulario de login
+│   ├── RegisterForm.tsx    # Formulario de registro
+│   ├── ProtectedRoute.tsx  # HOC para rutas protegidas
+│   ├── DemoBanner.tsx      # Banner para usuarios Demo
+│   └── PremiumGate.tsx     # Gate para features premium
+├── context/
+│   └── AuthContext.tsx     # Context de autenticación
+├── hooks/
+│   ├── useAuth.ts          # Hook principal de auth
+│   └── useDemoMode.ts      # Hook para gestión modo Demo
+└── utils/
+    └── migrateDemoLists.ts # Migración listas Demo a BD
+
+src/features/admin/         # Dashboard administración
+├── layout/
+│   └── AdminLayout.tsx     # Layout con sidebar
+├── pages/
+│   ├── AdminDashboard.tsx  # Dashboard principal
+│   ├── UsersManagement.tsx # Gestión de usuarios
+│   ├── DatabaseManagement.tsx # Visualizador de BD
+│   └── AnalyticsPage.tsx   # Analytics y estadísticas
+└── components/
+    └── [componentes UI]
+
+database/migrations/        # Scripts SQL
+├── 01_create_profiles.sql  # Tabla profiles + triggers
+├── 02_add_user_id_to_lists.sql # Vincular listas con usuarios
+├── 03_create_admin_logs.sql # Tabla de auditoría
+└── 04_create_indexes.sql   # Índices para optimización
+```
+
+### Tablas de Autenticación:
+
+**1. profiles** - Perfiles extendidos con roles
+```sql
+- id: UUID (PK, FK a auth.users)
+- email: TEXT
+- role: TEXT ('admin' | 'user')
+- full_name: TEXT
+- avatar_url: TEXT
+- created_at: TIMESTAMP
+- updated_at: TIMESTAMP
+```
+
+**2. admin_logs** - Auditoría de acciones admin
+```sql
+- id: UUID (PK)
+- admin_id: UUID (FK a auth.users)
+- action: TEXT
+- table_name: TEXT
+- record_id: TEXT
+- changes: JSONB
+- created_at: TIMESTAMP
+```
+
+**3. listas_compra** - Modificada con user_id
+```sql
+- ... (campos existentes)
+- user_id: UUID (FK a auth.users) # NUEVO
+```
+
+### Features Premium vs Free:
+
+**Usuario Autenticado (Premium):**
+- ✅ Listas ilimitadas guardadas en la nube
+- ✅ Acceso desde cualquier dispositivo
+- ✅ Exportación a PDF y Excel
+- ✅ Historial completo de compras
+- ✅ Compartir listas (futuro)
+- ✅ Analytics personal (futuro)
+
+**Modo Demo (Free):**
+- ✅ Generación de listas con IA
+- ✅ Formulario completo de 8 pasos
+- ✅ Visualización de resultados
+- ✅ Hasta 3 listas en localStorage
+- ❌ Exportación bloqueada con PremiumGate
+- ❌ Acceso limitado a historial
+
+### Flujo de Autenticación:
+
+1. **Usuario No Autenticado:**
+   - Ve DemoBanner en HomePage y HistoryPage
+   - Puede usar formulario IA
+   - Listas se guardan en localStorage (máx 3)
+   - Features premium bloqueadas con overlay
+
+2. **Registro:**
+   - Formulario simple: email + contraseña
+   - Trigger automático crea perfil con role='user'
+   - Opción de migrar listas Demo a BD
+   - Redirección automática a login
+
+3. **Login:**
+   - AuthContext carga user + profile
+   - Header muestra avatar y menú
+   - Hook useListHistory carga listas desde BD
+   - Acceso completo a features
+
+4. **Admin:**
+   - Acceso a /admin/* rutas
+   - Dashboard con estadísticas
+   - Gestión de usuarios (CRUD)
+   - Ver todas las listas (RLS permite)
+
+### Crear Usuario Admin:
+
+```sql
+-- Método 1: Actualizar usuario existente
+UPDATE profiles
+SET role = 'admin'
+WHERE email = 'tu_email@ejemplo.com';
+
+-- Método 2: Durante registro (vía trigger modificado)
+-- Primer usuario registrado puede ser admin automáticamente
+```
+
+### Troubleshooting Común:
+
+**Error: "Email not confirmed"**
+```sql
+-- Confirmar email manualmente en desarrollo
+UPDATE auth.users
+SET email_confirmed_at = NOW()
+WHERE email = 'tu_email@ejemplo.com';
+```
+
+**Error: 500 al cargar profile**
+- Verificar que RLS esté configurado correctamente
+- Temporalmente deshabilitar RLS en profiles si hay problemas:
+```sql
+ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+```
+
+**Listas no se guardan con user_id**
+- Verificar que AuthContext esté en App.tsx
+- Confirmar que useAuth() retorna user correctamente
+- Check que saveList() use el sistema híbrido
 
 ---
 

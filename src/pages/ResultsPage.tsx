@@ -10,6 +10,8 @@ import ProductEditModal from '../components/products/ProductEditModal';
 import { useListHistory } from '../hooks/useListHistory';
 import { exportToPDF } from '../utils/exportPDF';
 import { exportToExcel } from '../utils/exportExcel';
+import { useAuth } from '../features/auth/hooks/useAuth';
+import { PremiumGate } from '../features/auth/components/PremiumGate';
 
 interface ResultsPageProps {
   resultado: {
@@ -45,6 +47,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
 
   const { lista, menus, recomendaciones } = resultado;
   const { saveList } = useListHistory();
+  const { isAuthenticated } = useAuth();
 
   // Cerrar menú de exportación al hacer clic fuera
   useEffect(() => {
@@ -61,19 +64,36 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
     }
   }, [showExportMenu]);
 
-  const handleSaveList = () => {
+  const handleSaveList = async () => {
     try {
       // Actualizar resultado con productos actuales
       const resultadoActualizado = {
         ...resultado,
         productos: productosLista,
       };
-      saveList(resultadoActualizado);
+      
+      await saveList(resultadoActualizado);
+      
       setListaSaved(true);
+      
+      // Mostrar mensaje diferenciado según modo
+      const mensaje = isAuthenticated
+        ? 'Lista guardada en tu cuenta'
+        : 'Lista guardada temporalmente (modo Demo)';
+      
+      console.log(mensaje);
       setTimeout(() => setListaSaved(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar lista:', error);
-      alert('No se pudo guardar la lista');
+      
+      // Manejar límite Demo específicamente
+      if (error.message?.includes('DEMO_LIMIT')) {
+        const mensajeError = error.message.split(':')[1] || 'Límite alcanzado';
+        alert(mensajeError + '\n\n¿Deseas registrarte ahora?');
+        // Podría redirigir a /register aquí
+      } else {
+        alert('No se pudo guardar la lista');
+      }
     }
   };
 
@@ -331,42 +351,44 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                     )}
                   </button>
 
-                  {/* Menú de exportación */}
-                  <div className="relative col-span-1">
-                    <button
-                      onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                      title="Exportar lista"
-                    >
-                      <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Exportar</span>
-                    </button>
+                  {/* Menú de exportación - Premium Feature */}
+                  <PremiumGate feature="Exportación PDF/Excel">
+                    <div className="relative col-span-1">
+                      <button
+                        onClick={() => setShowExportMenu(!showExportMenu)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                        title="Exportar lista"
+                      >
+                        <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Exportar</span>
+                      </button>
 
-                    {showExportMenu && (
-                      <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-20">
-                        <button
-                          onClick={handleExportPDF}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-t-lg"
-                        >
-                          <Download className="w-4 h-4 text-red-500" />
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white text-sm">Exportar PDF</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Lista completa en PDF</p>
-                          </div>
-                        </button>
-                        <button
-                          onClick={handleExportExcel}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-b-lg border-t border-gray-200 dark:border-gray-700"
-                        >
-                          <Download className="w-4 h-4 text-green-500" />
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white text-sm">Exportar Excel</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Hoja de cálculo editable</p>
-                          </div>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      {showExportMenu && (
+                        <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-20">
+                          <button
+                            onClick={handleExportPDF}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-t-lg"
+                          >
+                            <Download className="w-4 h-4 text-red-500" />
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white text-sm">Exportar PDF</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Lista completa en PDF</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={handleExportExcel}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-b-lg border-t border-gray-200 dark:border-gray-700"
+                          >
+                            <Download className="w-4 h-4 text-green-500" />
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white text-sm">Exportar Excel</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Hoja de cálculo editable</p>
+                            </div>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </PremiumGate>
 
                   <button
                     className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"

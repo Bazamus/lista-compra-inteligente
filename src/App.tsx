@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
+import { AuthProvider } from './features/auth/context/AuthContext';
+import { ProtectedRoute } from './features/auth/components/ProtectedRoute';
 import Header from './components/common/Header';
 import HomePage from './pages/HomePage';
 import ResultsPage from './pages/ResultsPage';
 import HistoryPage from './pages/HistoryPage';
 import CatalogPage from './pages/CatalogPage';
 import ManualListResults from './pages/ManualListResults';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import AdminDashboard from './features/admin/pages/AdminDashboard';
+import UsersManagement from './features/admin/pages/UsersManagement';
+import DatabaseManagement from './features/admin/pages/DatabaseManagement';
+import AnalyticsPage from './features/admin/pages/AnalyticsPage';
 import TestAPI from './components/TestAPI';
 import ConversationalForm from './components/forms/ConversationalForm';
 import type { FormData } from './types/form.types';
@@ -114,6 +122,7 @@ function AppContent() {
         currentView={currentView}
       />
       <Routes>
+        {/* Rutas públicas */}
         <Route
           path="/"
           element={
@@ -177,6 +186,44 @@ function AppContent() {
           path="/history"
           element={<HistoryPage onViewList={handleViewList} onBackToHome={handleBackToHome} />}
         />
+
+        {/* Rutas de autenticación */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Rutas protegidas del Admin */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requireAdmin>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requireAdmin>
+              <UsersManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/database"
+          element={
+            <ProtectedRoute requireAdmin>
+              <DatabaseManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute requireAdmin>
+              <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );
@@ -184,13 +231,15 @@ function AppContent() {
 
 function App() {
   return (
-    <AppProvider>
-      <Router>
-        <div className="App">
-          <AppContent />
-        </div>
-      </Router>
-    </AppProvider>
+    <Router>
+      <AuthProvider>
+        <AppProvider>
+          <div className="App">
+            <AppContent />
+          </div>
+        </AppProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
