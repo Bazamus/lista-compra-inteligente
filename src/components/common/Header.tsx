@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ShoppingCart, Menu, X, Home, Sparkles, Package, History, User, LogOut, Settings } from 'lucide-react';
+import { ShoppingCart, Menu, X, Home, Sparkles, Package, History, User, LogOut, Settings, WifiOff, Wifi } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 
 interface HeaderProps {
   title?: string;
@@ -19,6 +20,7 @@ export default function Header({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, profile, isAuthenticated, signOut } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
 
   const navItems = [
     { id: 'home', label: 'Inicio', icon: Home },
@@ -49,17 +51,34 @@ export default function Header({
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-14 lg:h-16">
           {/* Logo y título */}
-          <button
-            onClick={() => handleNavClick('home')}
-            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
-          >
-            <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-2.5 rounded-xl shadow-lg">
-              <ShoppingCart className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleNavClick('home')}
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+            >
+              <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-2.5 rounded-xl shadow-lg">
+                <ShoppingCart className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">
+                {title}
+              </h1>
+            </button>
+
+            {/* Indicador de conexión */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              {isOnline ? (
+                <>
+                  <Wifi className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Online</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-4 h-4 text-orange-600 dark:text-orange-400 animate-pulse" />
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Offline</span>
+                </>
+              )}
             </div>
-            <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">
-              {title}
-            </h1>
-          </button>
+          </div>
 
           {/* Navegación Desktop - Horizontal SIN hamburguesa */}
           <div className="hidden lg:flex items-center space-x-2">

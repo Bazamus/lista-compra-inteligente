@@ -2,6 +2,7 @@ import { ArrowRight, Sparkles, Clock, PiggyBank, History, ShoppingCart, Package 
 import { useListHistory } from '../hooks/useListHistory';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { DemoBanner } from '../features/auth/components/DemoBanner';
+import InstallPrompt from '../components/common/InstallPrompt';
 
 interface HomePageProps {
   onStartForm: () => void;
@@ -43,6 +44,9 @@ export default function HomePage({ onStartForm, onViewHistory, onNavigateToCatal
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Prompt de instalación PWA */}
+      <InstallPrompt />
+
       {/* Banner Demo - Solo para usuarios no autenticados */}
       {!isAuthenticated && <DemoBanner />}
       

@@ -4,6 +4,7 @@ import { AppProvider } from './contexts/AppContext';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { ProtectedRoute } from './features/auth/components/ProtectedRoute';
 import Header from './components/common/Header';
+import OfflineBanner from './components/common/OfflineBanner';
 import HomePage from './pages/HomePage';
 import ResultsPage from './pages/ResultsPage';
 import HistoryPage from './pages/HistoryPage';
@@ -117,6 +118,7 @@ function AppContent() {
 
   return (
     <>
+      <OfflineBanner />
       <Header
         onNavigate={handleNavigate}
         currentView={currentView}
