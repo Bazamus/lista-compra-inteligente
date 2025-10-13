@@ -60,14 +60,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listener de cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log('Auth state changed:', event)
+        console.log('🔐 Auth state changed:', event, {
+          hasSession: !!currentSession,
+          userId: currentSession?.user?.id,
+          email: currentSession?.user?.email
+        })
 
         setSession(currentSession)
         setUser(currentSession?.user ?? null)
 
         if (currentSession?.user) {
+          console.log('👤 Usuario detectado, cargando perfil...')
           await fetchProfile(currentSession.user.id)
         } else {
+          console.log('❌ No hay sesión, limpiando perfil')
           setProfile(null)
           setLoading(false)
         }
@@ -79,6 +85,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('🔄 Fetching profile for user:', userId)
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -86,13 +94,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single()
 
       if (error) {
-        console.error('Error fetching profile:', error)
+        console.error('❌ Error fetching profile:', error)
         throw error
       }
 
+      console.log('✅ Profile fetched:', {
+        email: data.email,
+        role: data.role,
+        id: data.id
+      })
+
       setProfile(data as Profile)
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error('❌ Error fetching profile:', error)
       setProfile(null)
     } finally {
       setLoading(false)

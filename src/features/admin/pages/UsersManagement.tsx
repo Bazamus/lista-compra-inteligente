@@ -24,15 +24,25 @@ export default function UsersManagement() {
   const loadUsers = async () => {
     try {
       setLoading(true)
+      console.log('🔄 Cargando usuarios desde Supabase...')
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      console.log('📊 Respuesta de Supabase:', { data, error })
+
+      if (error) {
+        console.error('❌ Error de Supabase:', error)
+        throw error
+      }
+
+      console.log('✅ Usuarios cargados:', data?.length || 0)
       setUsers(data || [])
-    } catch (error) {
-      console.error('Error loading users:', error)
+    } catch (error: any) {
+      console.error('❌ Error loading users:', error)
+      alert(`Error al cargar usuarios: ${error.message || 'Error desconocido'}`)
     } finally {
       setLoading(false)
     }

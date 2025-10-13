@@ -9,11 +9,12 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { signIn, profile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const from = (location.state as any)?.from?.pathname || '/admin/dashboard'
+  // Redirigir a la página desde donde vino, o a home por defecto
+  const from = (location.state as any)?.from?.pathname || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,7 +39,13 @@ export function LoginForm() {
       )
       setLoading(false)
     } else {
+      console.log('✅ Login exitoso, esperando carga de perfil...')
+
+      // Esperar un momento para que se cargue el perfil
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       // Redirigir a la página desde donde vino o al dashboard
+      console.log('🔄 Redirigiendo a:', from)
       navigate(from, { replace: true })
     }
   }
