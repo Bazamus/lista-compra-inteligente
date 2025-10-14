@@ -18,7 +18,8 @@ type AppAction =
   | { type: 'SET_PRODUCTS'; payload: Product[] }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'CLEAR_STATE' };
+  | { type: 'CLEAR_STATE' }
+  | { type: 'RESET_ERROR' };
 
 const initialState: AppState = {
   formData: {},
@@ -68,6 +69,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
     case 'CLEAR_STATE':
       return initialState;
+    case 'RESET_ERROR':
+      return {
+        ...state,
+        error: null,
+        loading: false,
+      };
     default:
       return state;
   }

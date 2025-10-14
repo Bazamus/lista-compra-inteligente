@@ -87,14 +87,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('🔄 Fetching profile for user:', userId)
 
-      const { data, error } = await supabase
+      // Añadir timeout para evitar que se cuelgue
+      const queryPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .single();
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La consulta de perfil tardó más de 10 segundos')), 10000)
+      );
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       if (error) {
         console.error('❌ Error fetching profile:', error)
+        console.error('❌ Detalles del error:', JSON.stringify(error, null, 2))
         throw error
       }
 
@@ -107,7 +115,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(data as Profile)
     } catch (error) {
       console.error('❌ Error fetching profile:', error)
-      setProfile(null)
+      console.error('❌ Error type:', typeof error)
+      console.error('❌ Error message:', (error as any)?.message || 'No message')
+      // NO limpiar el perfil si hay error temporal, mantener el estado
+      // setProfile(null)
     } finally {
       setLoading(false)
     }

@@ -55,6 +55,12 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ data, updateData, onSubmit })
       console.error('❌ Error generando lista:', err);
       setError(err.message || 'Error al generar la lista. Por favor, inténtalo de nuevo.');
       setIsGenerating(false);
+      
+      // ✅ NUEVO: Limpiar estado de error después de 5 segundos para evitar corrupción
+      setTimeout(() => {
+        setError(null);
+        console.log('🔄 Estado de error limpiado automáticamente');
+      }, 5000);
     }
   };
 
