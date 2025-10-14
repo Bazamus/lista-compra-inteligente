@@ -33,7 +33,8 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ data, updateData, onSubmit })
         alimentosBasicos: data.alimentosBasicos || [],
         productosAdicionales: data.productosAdicionales || [],
         restricciones: data.restricciones || [],
-        preferencias: data.preferencias || []
+        preferencias: data.preferencias || [],
+        nombreLista: nombreLista.trim() || undefined // ✅ NUEVO: Incluir nombre personalizado
       };
 
       console.log('📤 Enviando petición a la API...', parametrosGeneracion);

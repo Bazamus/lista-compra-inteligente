@@ -85,6 +85,7 @@ export interface ParametrosGeneracion {
   productosAdicionales: string[];
   restricciones?: string[];
   preferencias?: string[];
+  nombreLista?: string; // ✅ NUEVO: Nombre personalizado de la lista
 }
 
 // ✅ NUEVO: Función helper para obtener headers de autenticación

@@ -25,6 +25,7 @@ interface RequestParams {
   productosAdicionales: string[];
   restricciones?: string[];
   preferencias?: string[];
+  nombreLista?: string; // ✅ NUEVO: Nombre personalizado de la lista
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -203,9 +204,11 @@ IMPORTANTE SOBRE PRECIOS:
     console.log('💾 Guardando lista en base de datos...');
     
     // ✅ NUEVO: Preparar data_json con toda la información generada
+    const nombreLista = params.nombreLista?.trim() || `Lista para ${params.numPersonas} personas - ${params.diasDuracion} días`;
+    
     const dataJson = {
       lista: {
-        nombre_lista: `Lista para ${params.numPersonas} personas - ${params.diasDuracion} días`,
+        nombre_lista: nombreLista,
         num_personas: params.numPersonas,
         dias_duracion: params.diasDuracion,
         presupuesto_total: params.presupuesto,
@@ -220,7 +223,7 @@ IMPORTANTE SOBRE PRECIOS:
     const { data: listaGuardada, error: guardarError } = await supabase
       .from('listas_compra')
       .insert({
-        nombre_lista: `Lista para ${params.numPersonas} personas - ${params.diasDuracion} días`,
+        nombre_lista: nombreLista, // ✅ NUEVO: Usar nombre personalizado
         descripcion: 'Lista generada automáticamente con IA',
         num_personas: params.numPersonas,
         dias_duracion: params.diasDuracion,
