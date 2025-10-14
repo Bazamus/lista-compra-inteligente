@@ -91,12 +91,22 @@ export interface ParametrosGeneracion {
 export async function getAuthHeaders(): Promise<HeadersInit> {
   const { data: { session } } = await supabase.auth.getSession();
   
+  console.log('🔐 getAuthHeaders: Session data:', {
+    hasSession: !!session,
+    hasAccessToken: !!session?.access_token,
+    userId: session?.user?.id,
+    email: session?.user?.email
+  });
+  
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
   
   if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
+    console.log('🔐 getAuthHeaders: Token añadido al header');
+  } else {
+    console.log('⚠️ getAuthHeaders: No hay token de acceso');
   }
   
   return headers;

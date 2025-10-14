@@ -49,16 +49,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const authHeader = req.headers.authorization;
     let userId: string | null = null;
 
+    console.log('🔐 API generar-lista: Auth header recibido:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderLength: authHeader?.length || 0,
+      startsWithBearer: authHeader?.startsWith('Bearer ') || false
+    });
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
+      console.log('🔐 API generar-lista: Token extraído, longitud:', token.length);
+      
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        console.log('🔐 API generar-lista: Resultado getUser:', {
+          hasUser: !!user,
+          userId: user?.id,
+          hasError: !!authError,
+          errorMessage: authError?.message
+        });
+        
         if (!authError && user) {
           userId = user.id;
           console.log('🔐 Usuario autenticado:', userId);
+        } else {
+          console.warn('⚠️ Error en getUser:', authError);
         }
       } catch (error) {
-        console.warn('⚠️ Token inválido o no autenticado');
+        console.warn('⚠️ Token inválido o no autenticado:', error);
       }
     } else {
       console.log('ℹ️ Request sin autenticación (modo Demo)');
