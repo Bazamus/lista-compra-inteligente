@@ -71,7 +71,8 @@ export const useListHistory = () => {
 
       console.log('📊 loadListsFromDB: Cargando listas para user:', user.id);
 
-      const { data, error } = await supabase
+      // Añadir timeout para evitar que se cuelgue
+      const queryPromise = supabase
         .from('listas_compra')
         .select(`
           id_lista,
@@ -89,8 +90,16 @@ export const useListHistory = () => {
         .order('created_at', { ascending: false })
         .limit(MAX_LISTS);
 
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La consulta tardó más de 30 segundos')), 30000)
+      );
+
+      console.log('🔄 Ejecutando query con timeout...');
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
       if (error) {
         console.error('❌ Error en query Supabase:', error);
+        console.error('❌ Detalles del error:', JSON.stringify(error, null, 2));
         throw error;
       }
 
@@ -134,8 +143,12 @@ export const useListHistory = () => {
 
       console.log('✅ Estableciendo savedLists con', lists.length, 'listas');
       setSavedLists(lists);
+      console.log('✅ loadListsFromDB completado exitosamente');
     } catch (error) {
       console.error('❌ Error loading lists from DB:', error);
+      console.error('❌ Error type:', typeof error);
+      console.error('❌ Error message:', (error as any)?.message || 'No message');
+      console.error('❌ Error stack:', (error as any)?.stack || 'No stack');
       // ⚠️  NO usar fallback a localStorage para usuarios autenticados
       // Esto causa que se borren las listas de BD si hay un error temporal
       console.error('⚠️  No se usa fallback a localStorage para usuarios autenticados');
