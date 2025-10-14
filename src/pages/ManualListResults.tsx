@@ -65,39 +65,8 @@ const ManualListResults: React.FC = () => {
 
   const categorias = Object.keys(productosPorCategoria).sort();
 
-  // Guardar lista automáticamente al cargar la página
-  useEffect(() => {
-    try {
-      // Adaptar formato Cart a formato SavedList
-      const resultadoParaGuardar = {
-        lista: {
-          nombre: listName,
-          fecha: new Date().toISOString(),
-          presupuesto: presupuestoTotal,
-          dias: 7, // Default
-          personas: 1, // Default
-        },
-        productos: productosLista.map(item => ({
-          id_producto: item.product.id_producto,
-          nombre: item.product.nombre_producto,
-          cantidad: item.quantity,
-          precio_unitario: item.product.precio_formato_venta, // Precio del formato de venta
-          categoria: item.product.nombre_categoria,
-          esencial: false,
-        })),
-        menus: {}, // Lista manual no tiene menús
-        presupuesto_estimado: presupuestoTotal,
-        recomendaciones: [],
-        tipo: 'Manual' as const,
-      };
-
-      saveList(resultadoParaGuardar);
-      setListaSaved(true);
-      setTimeout(() => setListaSaved(false), 3000);
-    } catch (error) {
-      console.error('Error al guardar lista automáticamente:', error);
-    }
-  }, []);
+  // ❌ ELIMINADO: Guardado automático que causaba duplicación
+  // El usuario debe hacer clic en "Guardar lista" para guardar manualmente
 
   // Cerrar menú de exportación al hacer clic fuera
   useEffect(() => {
