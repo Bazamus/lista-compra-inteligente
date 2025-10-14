@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ConversationalFormProps, FormStep } from '../../types/form.types';
 import { useMultiStepForm } from '../../hooks/useMultiStepForm';
 import ProgressIndicator from './ProgressIndicator';
@@ -222,30 +222,23 @@ const ConversationalForm: React.FC<ConversationalFormProps> = ({
             Anterior
           </button>
 
-          {/* Botón Siguiente/Finalizar */}
-          <button
-            onClick={handleNextStep}
-            disabled={!canProceed()}
-            className={`
-              flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-all duration-200
-              ${canProceed()
-                ? 'bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-              }
-            `}
-          >
-            {isLast ? (
-              <>
-                <Check size={20} />
-                Generar Lista
-              </>
-            ) : (
-              <>
-                Siguiente
-                <ChevronRight size={20} />
-              </>
-            )}
-          </button>
+          {/* Botón Siguiente - Solo mostrar si no es el último paso */}
+          {!isLast && (
+            <button
+              onClick={handleNextStep}
+              disabled={!canProceed()}
+              className={`
+                flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-all duration-200
+                ${canProceed()
+                  ? 'bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                }
+              `}
+            >
+              Siguiente
+              <ChevronRight size={20} />
+            </button>
+          )}
         </motion.div>
 
         {/* Botón cancelar (opcional) */}
