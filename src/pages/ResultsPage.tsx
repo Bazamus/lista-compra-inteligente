@@ -68,10 +68,19 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
     try {
       console.log('🎯 ResultsPage handleSaveList: Iniciando guardado...');
       console.log('📦 resultado original:', resultado);
+      console.log('🔍 resultado.lista:', resultado.lista);
+      console.log('🔍 lista properties:', Object.keys(resultado.lista || {}));
 
       // Actualizar resultado con productos actuales
       const resultadoActualizado = {
-        lista: resultado.lista,
+        lista: {
+          ...resultado.lista,
+          // ✅ Asegurar que tenga nombre_lista
+          nombre_lista: resultado.lista?.nombre_lista || lista.nombre_lista || 'Lista generada con IA',
+          num_personas: resultado.lista?.num_personas || lista.num_personas,
+          dias_duracion: resultado.lista?.dias_duracion || lista.dias_duracion,
+          presupuesto_total: presupuestoActual,
+        },
         productos: productosLista,
         menus: resultado.menus || {},
         presupuesto_estimado: presupuestoActual,
@@ -80,6 +89,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
       };
 
       console.log('📝 resultadoActualizado:', resultadoActualizado);
+      console.log('📝 resultadoActualizado.lista:', resultadoActualizado.lista);
 
       await saveList(resultadoActualizado);
 
