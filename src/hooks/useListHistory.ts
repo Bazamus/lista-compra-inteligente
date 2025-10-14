@@ -187,6 +187,7 @@ export const useListHistory = () => {
         tipo: resultado.tipo,
         lista_id: resultado.lista?.id_lista
       });
+      console.log('📦 resultado completo:', JSON.stringify(resultado, null, 2));
 
       // ✅ NUEVO: Si la lista viene de generar-lista.ts, ya tiene id_lista y user_id
       // Solo necesitamos actualizar si el usuario renombra
@@ -236,14 +237,27 @@ export const useListHistory = () => {
       };
 
       console.log('🔄 Insertando lista manual en BD...');
-      const { data: listaInsertada, error: listaError } = await supabase
+      console.log('📝 Datos a insertar:', JSON.stringify(listaData, null, 2));
+      
+      // Añadir timeout para evitar que se cuelgue
+      const insertPromise = supabase
         .from('listas_compra')
         .insert(listaData)
         .select()
         .single();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La inserción tardó más de 30 segundos')), 30000)
+      );
+      
+      const { data: listaInsertada, error: listaError } = await Promise.race([
+        insertPromise,
+        timeoutPromise
+      ]) as any;
 
       if (listaError) {
         console.error('❌ Error insertando lista:', listaError);
+        console.error('❌ Detalles del error:', JSON.stringify(listaError, null, 2));
         throw listaError;
       }
 
