@@ -69,7 +69,8 @@ export const useListHistory = () => {
           dias_duracion,
           tipo_comidas,
           productos_basicos,
-          productos_adicionales
+          productos_adicionales,
+          data_json
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -78,18 +79,38 @@ export const useListHistory = () => {
       if (error) throw error;
 
       // Transformar datos de BD a formato SavedList
-      const lists: SavedList[] = (data || []).map(lista => ({
-        id: lista.id_lista,
-        nombre: lista.nombre_lista,
-        fecha: lista.created_at,
-        productos: [], // Se cargarían desde items_lista si es necesario
-        menus: {},
-        presupuesto_estimado: lista.presupuesto_total || 0,
-        recomendaciones: [],
-        dias: lista.dias_duracion || 7,
-        personas: lista.num_personas || 1,
-        tipo: 'IA' as const,
-      }));
+      const lists: SavedList[] = (data || []).map(lista => {
+        // Si existe data_json, usarlo como fuente principal de datos
+        if (lista.data_json) {
+          return {
+            id: lista.id_lista,
+            nombre: lista.nombre_lista,
+            fecha: lista.created_at,
+            productos: lista.data_json.productos || [],
+            menus: lista.data_json.menus || {},
+            presupuesto_estimado: lista.data_json.presupuesto_estimado || lista.presupuesto_total || 0,
+            recomendaciones: lista.data_json.recomendaciones || [],
+            dias: lista.dias_duracion || 7,
+            personas: lista.num_personas || 1,
+            tipo: lista.data_json.tipo || 'IA' as const,
+            resultado: lista.data_json, // Datos completos para compatibilidad
+          };
+        }
+
+        // Fallback para listas antiguas sin data_json
+        return {
+          id: lista.id_lista,
+          nombre: lista.nombre_lista,
+          fecha: lista.created_at,
+          productos: [], // Se cargarían desde items_lista si es necesario
+          menus: {},
+          presupuesto_estimado: lista.presupuesto_total || 0,
+          recomendaciones: [],
+          dias: lista.dias_duracion || 7,
+          personas: lista.num_personas || 1,
+          tipo: 'IA' as const,
+        };
+      });
 
       setSavedLists(lists);
     } catch (error) {
@@ -143,6 +164,16 @@ export const useListHistory = () => {
         minute: '2-digit'
       })}`;
 
+      // Preparar data_json con todos los datos del resultado
+      const dataJson = {
+        lista: resultado.lista,
+        productos: resultado.productos || [],
+        menus: resultado.menus || {},
+        presupuesto_estimado: resultado.presupuesto_estimado || 0,
+        recomendaciones: resultado.recomendaciones || [],
+        tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual'),
+      };
+
       const listaData = {
         nombre_lista: nombre || resultado.lista?.nombre || defaultName,
         descripcion: resultado.lista?.descripcion || null,
@@ -157,6 +188,7 @@ export const useListHistory = () => {
         fecha_compra: null,
         notas: null,
         user_id: user.id,
+        data_json: dataJson, // ✅ NUEVO: Guardar datos completos en JSONB
       };
 
       const { data: listaInsertada, error: listaError } = await supabase
@@ -167,7 +199,7 @@ export const useListHistory = () => {
 
       if (listaError) throw listaError;
 
-      // Insertar productos si existen
+      // Insertar productos en items_lista (para mantener normalización)
       if (resultado.productos && resultado.productos.length > 0) {
         const itemsData = resultado.productos.map((producto: any) => ({
           id_lista: listaInsertada.id_lista,
@@ -185,7 +217,7 @@ export const useListHistory = () => {
         if (itemsError) console.error('Error inserting items:', itemsError);
       }
 
-      // Recargar listas
+      // Recargar listas desde BD
       await loadListsFromDB();
 
       return listaInsertada.id_lista;
