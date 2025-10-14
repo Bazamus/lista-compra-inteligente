@@ -56,7 +56,12 @@ export const useListHistory = () => {
 
   const loadListsFromDB = async () => {
     try {
-      if (!user) return;
+      if (!user) {
+        console.log('🚫 loadListsFromDB: No hay usuario autenticado');
+        return;
+      }
+
+      console.log('📊 loadListsFromDB: Cargando listas para user:', user.id);
 
       const { data, error } = await supabase
         .from('listas_compra')
@@ -76,12 +81,18 @@ export const useListHistory = () => {
         .order('created_at', { ascending: false })
         .limit(MAX_LISTS);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error en query Supabase:', error);
+        throw error;
+      }
+
+      console.log('✅ Listas cargadas desde BD:', data?.length || 0);
 
       // Transformar datos de BD a formato SavedList
       const lists: SavedList[] = (data || []).map(lista => {
         // Si existe data_json, usarlo como fuente principal de datos
         if (lista.data_json) {
+          console.log('📦 Lista con data_json:', lista.nombre_lista, '- Productos:', lista.data_json.productos?.length || 0);
           return {
             id: lista.id_lista,
             nombre: lista.nombre_lista,
@@ -98,6 +109,7 @@ export const useListHistory = () => {
         }
 
         // Fallback para listas antiguas sin data_json
+        console.log('⚠️  Lista SIN data_json:', lista.nombre_lista);
         return {
           id: lista.id_lista,
           nombre: lista.nombre_lista,
@@ -112,11 +124,14 @@ export const useListHistory = () => {
         };
       });
 
+      console.log('✅ Estableciendo savedLists con', lists.length, 'listas');
       setSavedLists(lists);
     } catch (error) {
-      console.error('Error loading lists from DB:', error);
-      // Fallback a localStorage si falla BD
-      loadListsFromLocalStorage();
+      console.error('❌ Error loading lists from DB:', error);
+      // ⚠️  NO usar fallback a localStorage para usuarios autenticados
+      // Esto causa que se borren las listas de BD si hay un error temporal
+      console.error('⚠️  No se usa fallback a localStorage para usuarios autenticados');
+      setSavedLists([]); // Mostrar vacío en caso de error
     }
   };
 
@@ -156,6 +171,14 @@ export const useListHistory = () => {
     try {
       if (!user) throw new Error('Usuario no autenticado');
 
+      console.log('💾 saveListToDB: Iniciando guardado para user:', user.id);
+      console.log('📦 Datos recibidos:', {
+        nombre: nombre,
+        productos: resultado.productos?.length || 0,
+        menus: Object.keys(resultado.menus || {}).length,
+        tipo: resultado.tipo
+      });
+
       const defaultName = `Lista del ${new Date().toLocaleString('es-ES', {
         day: '2-digit',
         month: '2-digit',
@@ -174,6 +197,12 @@ export const useListHistory = () => {
         tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual'),
       };
 
+      console.log('📝 data_json preparado:', {
+        productos: dataJson.productos.length,
+        menus: Object.keys(dataJson.menus).length,
+        tipo: dataJson.tipo
+      });
+
       const listaData = {
         nombre_lista: nombre || resultado.lista?.nombre || defaultName,
         descripcion: resultado.lista?.descripcion || null,
@@ -191,16 +220,23 @@ export const useListHistory = () => {
         data_json: dataJson, // ✅ NUEVO: Guardar datos completos en JSONB
       };
 
+      console.log('🔄 Insertando en BD...');
       const { data: listaInsertada, error: listaError } = await supabase
         .from('listas_compra')
         .insert(listaData)
         .select()
         .single();
 
-      if (listaError) throw listaError;
+      if (listaError) {
+        console.error('❌ Error insertando lista:', listaError);
+        throw listaError;
+      }
+
+      console.log('✅ Lista insertada con ID:', listaInsertada.id_lista);
 
       // Insertar productos en items_lista (para mantener normalización)
       if (resultado.productos && resultado.productos.length > 0) {
+        console.log('🔄 Insertando', resultado.productos.length, 'productos en items_lista...');
         const itemsData = resultado.productos.map((producto: any) => ({
           id_lista: listaInsertada.id_lista,
           id_producto: producto.id_producto,
@@ -214,15 +250,20 @@ export const useListHistory = () => {
           .from('items_lista')
           .insert(itemsData);
 
-        if (itemsError) console.error('Error inserting items:', itemsError);
+        if (itemsError) {
+          console.error('⚠️  Error inserting items:', itemsError);
+        } else {
+          console.log('✅ Items insertados correctamente');
+        }
       }
 
       // Recargar listas desde BD
+      console.log('🔄 Recargando listas desde BD...');
       await loadListsFromDB();
 
       return listaInsertada.id_lista;
     } catch (error) {
-      console.error('Error saving list to DB:', error);
+      console.error('❌ Error saving list to DB:', error);
       throw error;
     }
   };
