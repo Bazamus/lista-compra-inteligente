@@ -107,15 +107,14 @@ const ManualListResults: React.FC = () => {
     });
   };
 
-  const handleSaveList = () => {
+  const handleSaveList = async () => {
     try {
       const resultadoActualizado = {
         lista: {
-          nombre: listName,
-          fecha: new Date().toISOString(),
-          presupuesto: presupuestoTotal,
-          dias: 7,
-          personas: 1,
+          nombre_lista: listName, // ✅ CORREGIDO: Usar nombre_lista
+          num_personas: 1,
+          dias_duracion: 7,
+          presupuesto_total: presupuestoTotal,
         },
         productos: productosLista.map(item => ({
           id_producto: item.product.id_producto,
@@ -131,12 +130,14 @@ const ManualListResults: React.FC = () => {
         tipo: 'Manual' as const,
       };
 
-      saveList(resultadoActualizado);
+      console.log('🎯 handleSaveList: Guardando lista manual...', resultadoActualizado);
+      await saveList(resultadoActualizado); // ✅ CORREGIDO: Añadido await
+      console.log('✅ handleSaveList: Lista guardada exitosamente');
       setListaSaved(true);
       setTimeout(() => setListaSaved(false), 3000);
     } catch (error) {
-      console.error('Error al guardar lista:', error);
-      alert('No se pudo guardar la lista');
+      console.error('❌ Error al guardar lista:', error);
+      alert('No se pudo guardar la lista: ' + (error as Error).message);
     }
   };
 

@@ -204,11 +204,11 @@ export const useListHistory = () => {
       });
 
       const listaData = {
-        nombre_lista: nombre || resultado.lista?.nombre || defaultName,
+        nombre_lista: nombre || resultado.lista?.nombre_lista || resultado.lista?.nombre || defaultName, // ✅ CORREGIDO: Soportar ambos formatos
         descripcion: resultado.lista?.descripcion || null,
-        num_personas: resultado.lista?.num_personas || 1,
-        dias_duracion: resultado.lista?.dias_duracion || Object.keys(resultado.menus || {}).length || 7,
-        presupuesto_total: resultado.presupuesto_estimado || 0,
+        num_personas: resultado.lista?.num_personas || resultado.lista?.personas || 1,
+        dias_duracion: resultado.lista?.dias_duracion || resultado.lista?.dias || Object.keys(resultado.menus || {}).length || 7,
+        presupuesto_total: resultado.presupuesto_estimado || resultado.lista?.presupuesto_total || 0,
         presupuesto_usado: resultado.presupuesto_estimado || 0,
         tipo_comidas: resultado.lista?.tipo_comidas || null,
         productos_basicos: resultado.lista?.productos_basicos || null,
