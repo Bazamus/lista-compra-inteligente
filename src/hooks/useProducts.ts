@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { categoriasApi, productosApi } from '../lib/api';
+import { categoriasApi, productosApi, type Categoria } from '../lib/api';
 import type { CartProduct, ProductFilters, Category } from '../types/cart.types';
 
 export const useProducts = () => {
@@ -10,7 +10,7 @@ export const useProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [searchSuggestions] = useState<string[]>([]);
   const pageSize = 24; // 24 productos por página (grid 4x6)
 
   // Cargar categorías al montar
@@ -23,7 +23,17 @@ export const useProducts = () => {
       console.log('🔄 loadCategories: Cargando categorías...');
       const response = await categoriasApi.obtenerTodas();
       console.log('✅ Categorías cargadas:', response.categorias?.length || 0);
-      setCategories(response.categorias || []);
+      // Convertir Categoria[] a Category[] para compatibilidad
+      const categoriesFormatted: Category[] = (response.categorias || []).map((cat: Categoria) => ({
+        id_categoria: cat.id_categoria,
+        nombre_categoria: cat.nombre_categoria,
+        subcategorias: cat.subcategorias?.map((sub: any) => ({
+          id_subcategoria: sub.id_subcategoria,
+          id_categoria: sub.categorias?.id_categoria || cat.id_categoria,
+          nombre_subcategoria: sub.nombre_subcategoria,
+        })),
+      }));
+      setCategories(categoriesFormatted);
     } catch (err: any) {
       console.error('❌ Error al cargar categorías:', err);
       setError(err.message);

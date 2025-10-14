@@ -106,7 +106,7 @@ export const useListHistory = () => {
       console.log('✅ Listas cargadas desde BD:', data?.length || 0);
 
       // Transformar datos de BD a formato SavedList
-      const lists: SavedList[] = (data || []).map(lista => {
+      const lists: SavedList[] = (data || []).map((lista: any) => {
         // Si existe data_json, usarlo como fuente principal de datos
         if (lista.data_json) {
           console.log('📦 Lista con data_json:', lista.nombre_lista, '- Productos:', lista.data_json.productos?.length || 0);
