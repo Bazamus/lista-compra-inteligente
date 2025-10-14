@@ -188,12 +188,21 @@ export const useListHistory = () => {
         lista_id: resultado.lista?.id_lista
       });
 
-      // ✅ NUEVO: Detectar si la lista ya existe (tiene id_lista)
-      if (resultado.lista?.id_lista) {
-        console.log('🔄 Lista ya existe, actualizando en vez de insertar...');
+      // ✅ NUEVO: Si la lista viene de generar-lista.ts, ya tiene id_lista y user_id
+      // Solo necesitamos actualizar si el usuario renombra
+      if (resultado.lista?.id_lista && nombre) {
+        console.log('🔄 Actualizando nombre de lista existente...');
         return await updateListInDB(resultado, nombre);
       }
 
+      // Si viene de generar-lista.ts y ya está guardada, solo retornar el ID
+      if (resultado.lista?.id_lista && resultado.lista?.user_id === user.id) {
+        console.log('✅ Lista ya guardada correctamente en BD, retornando ID');
+        await loadListsFromDB(); // Recargar para mostrar en UI
+        return resultado.lista.id_lista;
+      }
+
+      // Solo para listas manuales del carrito (no tienen id_lista)
       const defaultName = `Lista del ${new Date().toLocaleString('es-ES', {
         day: '2-digit',
         month: '2-digit',
@@ -202,7 +211,6 @@ export const useListHistory = () => {
         minute: '2-digit'
       })}`;
 
-      // Preparar data_json con todos los datos del resultado
       const dataJson = {
         lista: resultado.lista,
         productos: resultado.productos || [],
@@ -212,14 +220,8 @@ export const useListHistory = () => {
         tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual'),
       };
 
-      console.log('📝 data_json preparado:', {
-        productos: dataJson.productos.length,
-        menus: Object.keys(dataJson.menus).length,
-        tipo: dataJson.tipo
-      });
-
       const listaData = {
-        nombre_lista: nombre || resultado.lista?.nombre_lista || resultado.lista?.nombre || defaultName, // ✅ CORREGIDO: Soportar ambos formatos
+        nombre_lista: nombre || resultado.lista?.nombre_lista || resultado.lista?.nombre || defaultName,
         descripcion: resultado.lista?.descripcion || null,
         num_personas: resultado.lista?.num_personas || resultado.lista?.personas || 1,
         dias_duracion: resultado.lista?.dias_duracion || resultado.lista?.dias || Object.keys(resultado.menus || {}).length || 7,
@@ -229,13 +231,11 @@ export const useListHistory = () => {
         productos_basicos: resultado.lista?.productos_basicos || null,
         productos_adicionales: resultado.lista?.productos_adicionales || null,
         completada: false,
-        fecha_compra: null,
-        notas: null,
         user_id: user.id,
-        data_json: dataJson, // ✅ NUEVO: Guardar datos completos en JSONB
+        data_json: dataJson,
       };
 
-      console.log('🔄 Insertando en BD...');
+      console.log('🔄 Insertando lista manual en BD...');
       const { data: listaInsertada, error: listaError } = await supabase
         .from('listas_compra')
         .insert(listaData)
@@ -247,18 +247,16 @@ export const useListHistory = () => {
         throw listaError;
       }
 
-      console.log('✅ Lista insertada con ID:', listaInsertada.id_lista);
+      console.log('✅ Lista manual insertada con ID:', listaInsertada.id_lista);
 
-      // Insertar productos en items_lista (para mantener normalización)
+      // Insertar items
       if (resultado.productos && resultado.productos.length > 0) {
-        console.log('🔄 Insertando', resultado.productos.length, 'productos en items_lista...');
         const itemsData = resultado.productos.map((producto: any) => ({
           id_lista: listaInsertada.id_lista,
           id_producto: producto.id_producto,
           cantidad: producto.cantidad,
           precio_unitario: producto.precio_unitario,
           comprado: false,
-          notas: null,
         }));
 
         const { error: itemsError } = await supabase
@@ -266,16 +264,11 @@ export const useListHistory = () => {
           .insert(itemsData);
 
         if (itemsError) {
-          console.error('⚠️  Error inserting items:', itemsError);
-        } else {
-          console.log('✅ Items insertados correctamente');
+          console.error('⚠️ Error inserting items:', itemsError);
         }
       }
 
-      // Recargar listas desde BD
-      console.log('🔄 Recargando listas desde BD...');
       await loadListsFromDB();
-
       return listaInsertada.id_lista;
     } catch (error) {
       console.error('❌ Error saving list to DB:', error);

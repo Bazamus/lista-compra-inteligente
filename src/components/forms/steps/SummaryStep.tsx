@@ -5,7 +5,7 @@ import {
   Package, Heart, Sparkles, Edit, ChevronRight, AlertCircle
 } from 'lucide-react';
 import type { FormStepProps } from '../../../types/form.types';
-import { api } from '../../../lib/api';
+import { generarListaConIA } from '../../../lib/api';
 
 interface SummaryStepProps extends FormStepProps {
   onSubmit: (resultadoIA?: any) => void;
@@ -39,7 +39,7 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ data, updateData, onSubmit })
       console.log('📤 Enviando petición a la API...', parametrosGeneracion);
 
       // Llamar a la API de generación con IA
-      const resultado = await api.listas.generarConIA(parametrosGeneracion);
+      const resultado = await generarListaConIA(parametrosGeneracion);
 
       console.log('✅ Respuesta de la API:', resultado);
 

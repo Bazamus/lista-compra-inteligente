@@ -7,12 +7,32 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// ✅ NUEVO: Función helper para extraer user_id del token
+async function getUserIdFromRequest(req: VercelRequest): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.substring(7);
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return null;
+    }
+    return user.id;
+  } catch (error) {
+    console.error('Error getting user from token:', error);
+    return null;
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -44,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 // Obtener listas de compra
 async function handleGetListas(req: VercelRequest, res: VercelResponse) {
   const { lista_id, incluir_items = 'false' } = req.query;
+  const userId = await getUserIdFromRequest(req);
 
   try {
     if (lista_id) {
@@ -51,10 +72,17 @@ async function handleGetListas(req: VercelRequest, res: VercelResponse) {
       let query = supabase
         .from('listas_compra')
         .select('*')
-        .eq('id_lista', lista_id)
-        .single();
+        .eq('id_lista', lista_id);
 
-      const { data: lista, error } = await query;
+      // ✅ NUEVO: Filtrar por user_id si está autenticado
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        // Si no está autenticado, solo mostrar listas sin user_id (Demo)
+        query = query.is('user_id', null);
+      }
+
+      const { data: lista, error } = await query.single();
 
       if (error) {
         console.error('Error obteniendo lista:', error);
@@ -99,10 +127,20 @@ async function handleGetListas(req: VercelRequest, res: VercelResponse) {
 
     } else {
       // Obtener todas las listas
-      const { data: listas, error } = await supabase
+      let query = supabase
         .from('listas_compra')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // ✅ NUEVO: Filtrar por user_id si está autenticado
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        // Si no está autenticado, solo mostrar listas sin user_id (Demo)
+        query = query.is('user_id', null);
+      }
+
+      const { data: listas, error } = await query;
 
       if (error) {
         console.error('Error obteniendo listas:', error);
@@ -122,6 +160,7 @@ async function handleGetListas(req: VercelRequest, res: VercelResponse) {
 
 // Crear nueva lista
 async function handleCreateLista(req: VercelRequest, res: VercelResponse) {
+  const userId = await getUserIdFromRequest(req);
   const {
     nombre_lista,
     descripcion,
@@ -146,7 +185,8 @@ async function handleCreateLista(req: VercelRequest, res: VercelResponse) {
         productos_basicos,
         productos_adicionales,
         presupuesto_usado: 0,
-        completada: false
+        completada: false,
+        user_id: userId, // ✅ NUEVO: Asociar al usuario autenticado
       })
       .select()
       .single();
@@ -167,6 +207,7 @@ async function handleCreateLista(req: VercelRequest, res: VercelResponse) {
 // Actualizar lista
 async function handleUpdateLista(req: VercelRequest, res: VercelResponse) {
   const { lista_id } = req.query;
+  const userId = await getUserIdFromRequest(req);
   const updates = req.body;
 
   if (!lista_id) {
@@ -174,10 +215,20 @@ async function handleUpdateLista(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { data: lista, error } = await supabase
+    let query = supabase
       .from('listas_compra')
       .update(updates)
-      .eq('id_lista', lista_id)
+      .eq('id_lista', lista_id);
+
+    // ✅ NUEVO: Validar que sea del usuario autenticado
+    if (userId) {
+      query = query.eq('user_id', userId);
+    } else {
+      // Si no está autenticado, solo permitir actualizar listas sin user_id (Demo)
+      query = query.is('user_id', null);
+    }
+
+    const { data: lista, error } = await query
       .select()
       .single();
 
@@ -197,16 +248,27 @@ async function handleUpdateLista(req: VercelRequest, res: VercelResponse) {
 // Eliminar lista
 async function handleDeleteLista(req: VercelRequest, res: VercelResponse) {
   const { lista_id } = req.query;
+  const userId = await getUserIdFromRequest(req);
 
   if (!lista_id) {
     return res.status(400).json({ error: 'ID de lista requerido' });
   }
 
   try {
-    const { error } = await supabase
+    let query = supabase
       .from('listas_compra')
       .delete()
       .eq('id_lista', lista_id);
+
+    // ✅ NUEVO: Solo permitir borrar propias listas
+    if (userId) {
+      query = query.eq('user_id', userId);
+    } else {
+      // Si no está autenticado, solo permitir borrar listas sin user_id (Demo)
+      query = query.is('user_id', null);
+    }
+
+    const { error } = await query;
 
     if (error) {
       console.error('Error eliminando lista:', error);

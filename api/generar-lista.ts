@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -45,6 +45,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // ✅ NUEVO: Extraer user_id del token de autorización
+    const authHeader = req.headers.authorization;
+    let userId: string | null = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        if (!authError && user) {
+          userId = user.id;
+          console.log('🔐 Usuario autenticado:', userId);
+        }
+      } catch (error) {
+        console.warn('⚠️ Token inválido o no autenticado');
+      }
+    } else {
+      console.log('ℹ️ Request sin autenticación (modo Demo)');
+    }
+
     const params: RequestParams = req.body;
 
     // Validar parámetros requeridos
@@ -165,6 +184,22 @@ IMPORTANTE SOBRE PRECIOS:
 
     // 5. Guardar lista en base de datos
     console.log('💾 Guardando lista en base de datos...');
+    
+    // ✅ NUEVO: Preparar data_json con toda la información generada
+    const dataJson = {
+      lista: {
+        nombre_lista: `Lista para ${params.numPersonas} personas - ${params.diasDuracion} días`,
+        num_personas: params.numPersonas,
+        dias_duracion: params.diasDuracion,
+        presupuesto_total: params.presupuesto,
+      },
+      productos: listaGenerada.productos || [],
+      menus: listaGenerada.menus || {},
+      presupuesto_estimado: listaGenerada.presupuesto_estimado || 0,
+      recomendaciones: listaGenerada.recomendaciones || [],
+      tipo: 'IA' as const,
+    };
+
     const { data: listaGuardada, error: guardarError } = await supabase
       .from('listas_compra')
       .insert({
@@ -177,7 +212,9 @@ IMPORTANTE SOBRE PRECIOS:
         tipo_comidas: params.tipoComidas,
         productos_basicos: params.alimentosBasicos,
         productos_adicionales: params.productosAdicionales,
-        completada: false
+        completada: false,
+        user_id: userId, // ✅ NUEVO: Asociar al usuario autenticado (null si es Demo)
+        data_json: dataJson, // ✅ NUEVO: Guardar datos completos en JSONB
       })
       .select()
       .single();
@@ -215,11 +252,16 @@ IMPORTANTE SOBRE PRECIOS:
     // 7. Responder con la lista generada
     res.status(200).json({
       success: true,
-      lista: listaGuardada,
+      lista: {
+        ...listaGuardada,
+        // ✅ NUEVO: Asegurar que data_json esté incluido en la respuesta
+        data_json: dataJson,
+      },
       productos: listaGenerada.productos || [],
       menus: listaGenerada.menus || {},
       presupuesto_estimado: listaGenerada.presupuesto_estimado || 0,
-      recomendaciones: listaGenerada.recomendaciones || []
+      recomendaciones: listaGenerada.recomendaciones || [],
+      tipo: 'IA' as const,
     });
 
   } catch (error: any) {
