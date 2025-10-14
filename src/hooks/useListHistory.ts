@@ -178,8 +178,15 @@ export const useListHistory = () => {
         nombre: nombre,
         productos: resultado.productos?.length || 0,
         menus: Object.keys(resultado.menus || {}).length,
-        tipo: resultado.tipo
+        tipo: resultado.tipo,
+        lista_id: resultado.lista?.id_lista
       });
+
+      // ✅ NUEVO: Detectar si la lista ya existe (tiene id_lista)
+      if (resultado.lista?.id_lista) {
+        console.log('🔄 Lista ya existe, actualizando en vez de insertar...');
+        return await updateListInDB(resultado, nombre);
+      }
 
       const defaultName = `Lista del ${new Date().toLocaleString('es-ES', {
         day: '2-digit',
@@ -266,6 +273,92 @@ export const useListHistory = () => {
       return listaInsertada.id_lista;
     } catch (error) {
       console.error('❌ Error saving list to DB:', error);
+      throw error;
+    }
+  };
+
+  const updateListInDB = async (resultado: any, nombre?: string): Promise<string> => {
+    try {
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const listId = resultado.lista.id_lista;
+      console.log('🔄 updateListInDB: Actualizando lista', listId);
+
+      // Preparar data_json con todos los datos actualizados
+      const dataJson = {
+        lista: resultado.lista,
+        productos: resultado.productos || [],
+        menus: resultado.menus || {},
+        presupuesto_estimado: resultado.presupuesto_estimado || 0,
+        recomendaciones: resultado.recomendaciones || [],
+        tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual'),
+      };
+
+      console.log('📝 Actualizando data_json:', {
+        productos: dataJson.productos.length,
+        menus: Object.keys(dataJson.menus).length,
+        tipo: dataJson.tipo
+      });
+
+      // Actualizar solo los campos modificables
+      const updateData = {
+        nombre_lista: nombre || resultado.lista.nombre_lista,
+        presupuesto_total: resultado.presupuesto_estimado || 0,
+        data_json: dataJson,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: updateError } = await supabase
+        .from('listas_compra')
+        .update(updateData)
+        .eq('id_lista', listId)
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('❌ Error actualizando lista:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ Lista actualizada correctamente');
+
+      // Actualizar items_lista (eliminar viejos e insertar nuevos)
+      if (resultado.productos && resultado.productos.length > 0) {
+        // Eliminar items antiguos
+        const { error: deleteError } = await supabase
+          .from('items_lista')
+          .delete()
+          .eq('id_lista', listId);
+
+        if (deleteError) console.warn('⚠️  Error eliminando items antiguos:', deleteError);
+
+        // Insertar nuevos items
+        const itemsData = resultado.productos.map((producto: any) => ({
+          id_lista: listId,
+          id_producto: producto.id_producto,
+          cantidad: producto.cantidad,
+          precio_unitario: producto.precio_unitario,
+          comprado: false,
+          notas: null,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('items_lista')
+          .insert(itemsData);
+
+        if (itemsError) {
+          console.error('⚠️  Error insertando items actualizados:', itemsError);
+        } else {
+          console.log('✅ Items actualizados correctamente');
+        }
+      }
+
+      // Recargar listas desde BD
+      console.log('🔄 Recargando listas desde BD...');
+      await loadListsFromDB();
+
+      return listId;
+    } catch (error) {
+      console.error('❌ Error updating list in DB:', error);
       throw error;
     }
   };
