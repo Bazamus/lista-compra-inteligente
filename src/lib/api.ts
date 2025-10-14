@@ -291,20 +291,30 @@ export async function generarListaConIA(params: {
   restricciones?: string[];
   preferencias?: string[];
 }) {
+  console.log('🔄 generarListaConIA: Iniciando...');
   const headers = await getAuthHeaders();
+  console.log('🔐 Headers de autenticación:', headers);
   
+  console.log('📡 Enviando request a /api/generar-lista...');
   const response = await fetch('/api/generar-lista', {
     method: 'POST',
     headers,
     body: JSON.stringify(params),
   });
   
+  console.log('📡 Response status:', response.status, response.statusText);
+  
   if (!response.ok) {
+    console.error('❌ Response no OK:', response.status, response.statusText);
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Error al generar lista');
+    console.error('❌ Error data:', errorData);
+    throw new Error(errorData.error || `Error al generar lista: ${response.status} ${response.statusText}`);
   }
   
-  return response.json();
+  console.log('✅ Response OK, parseando JSON...');
+  const result = await response.json();
+  console.log('✅ JSON parseado:', result);
+  return result;
 }
 
 // ✅ NUEVO: Función para obtener listas (con autenticación)

@@ -38,8 +38,13 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ data, updateData, onSubmit })
 
       console.log('📤 Enviando petición a la API...', parametrosGeneracion);
 
-      // Llamar a la API de generación con IA
-      const resultado = await generarListaConIA(parametrosGeneracion);
+      // Llamar a la API de generación con IA con timeout
+      const apiPromise = generarListaConIA(parametrosGeneracion);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La generación tardó más de 60 segundos')), 60000)
+      );
+      
+      const resultado = await Promise.race([apiPromise, timeoutPromise]);
 
       console.log('✅ Respuesta de la API:', resultado);
 
