@@ -35,10 +35,12 @@ export const useListHistory = () => {
   const [savedLists, setSavedLists] = useState<SavedList[]>([]);
   const { user, isAuthenticated } = useAuth();
 
-  // Cargar listas al montar y cuando cambie el estado de autenticación
+  // Cargar listas al montar y cuando cambie el usuario (no en cada auth state change)
   useEffect(() => {
+    console.log('🔄 useEffect triggered - isAuthenticated:', isAuthenticated, 'user:', user?.id);
     loadLists();
-  }, [isAuthenticated, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // ✅ Solo recargar cuando cambie el ID del usuario, no en cada auth state
 
   const loadLists = async () => {
     try {

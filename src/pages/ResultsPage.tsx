@@ -66,33 +66,43 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
 
   const handleSaveList = async () => {
     try {
+      console.log('🎯 ResultsPage handleSaveList: Iniciando guardado...');
+      console.log('📦 resultado original:', resultado);
+
       // Actualizar resultado con productos actuales
       const resultadoActualizado = {
-        ...resultado,
+        lista: resultado.lista,
         productos: productosLista,
+        menus: resultado.menus || {},
+        presupuesto_estimado: presupuestoActual,
+        recomendaciones: resultado.recomendaciones || [],
+        tipo: 'IA' as const, // ✅ Especificar tipo explícitamente
       };
-      
+
+      console.log('📝 resultadoActualizado:', resultadoActualizado);
+
       await saveList(resultadoActualizado);
-      
+
+      console.log('✅ ResultsPage: Lista guardada exitosamente');
       setListaSaved(true);
-      
+
       // Mostrar mensaje diferenciado según modo
       const mensaje = isAuthenticated
         ? 'Lista guardada en tu cuenta'
         : 'Lista guardada temporalmente (modo Demo)';
-      
+
       console.log(mensaje);
       setTimeout(() => setListaSaved(false), 3000);
     } catch (error: any) {
-      console.error('Error al guardar lista:', error);
-      
+      console.error('❌ ResultsPage Error al guardar lista:', error);
+
       // Manejar límite Demo específicamente
       if (error.message?.includes('DEMO_LIMIT')) {
         const mensajeError = error.message.split(':')[1] || 'Límite alcanzado';
         alert(mensajeError + '\n\n¿Deseas registrarte ahora?');
         // Podría redirigir a /register aquí
       } else {
-        alert('No se pudo guardar la lista');
+        alert('No se pudo guardar la lista: ' + error.message);
       }
     }
   };
