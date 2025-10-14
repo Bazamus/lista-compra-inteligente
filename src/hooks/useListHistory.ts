@@ -38,7 +38,13 @@ export const useListHistory = () => {
   // Cargar listas al montar y cuando cambie el usuario (no en cada auth state change)
   useEffect(() => {
     console.log('🔄 useEffect triggered - isAuthenticated:', isAuthenticated, 'user:', user?.id);
-    loadLists();
+    // ⚠️  IMPORTANTE: Solo cargar si hay usuario O si definitivamente no está autenticado
+    // Evitar cargar cuando user es undefined temporalmente
+    if (user?.id || (!isAuthenticated && user === null)) {
+      loadLists();
+    } else {
+      console.log('⏸️  Esperando a que user se cargue completamente...');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]); // ✅ Solo recargar cuando cambie el ID del usuario, no en cada auth state
 
@@ -308,18 +314,26 @@ export const useListHistory = () => {
         updated_at: new Date().toISOString(),
       };
 
-      const { error: updateError } = await supabase
+      console.log('🔄 Ejecutando UPDATE en BD...');
+      const { data: updatedData, error: updateError } = await supabase
         .from('listas_compra')
         .update(updateData)
         .eq('id_lista', listId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select();
 
       if (updateError) {
         console.error('❌ Error actualizando lista:', updateError);
+        console.error('❌ Detalles del error:', JSON.stringify(updateError));
         throw updateError;
       }
 
-      console.log('✅ Lista actualizada correctamente');
+      if (!updatedData || updatedData.length === 0) {
+        console.error('⚠️  UPDATE no afectó ninguna fila. Lista ID:', listId, 'User ID:', user.id);
+        throw new Error('No se pudo actualizar la lista - no se encontró la lista');
+      }
+
+      console.log('✅ Lista actualizada correctamente:', updatedData);
 
       // Actualizar items_lista (eliminar viejos e insertar nuevos)
       if (resultado.productos && resultado.productos.length > 0) {
