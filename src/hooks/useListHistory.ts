@@ -286,6 +286,10 @@ export const useListHistory = () => {
       return listaInsertada.id_lista;
     } catch (error) {
       console.error('❌ Error saving list to DB:', error);
+      console.error('❌ Error type:', typeof error);
+      console.error('❌ Error message:', error?.message || 'No message');
+      console.error('❌ Error stack:', error?.stack || 'No stack');
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
   };
