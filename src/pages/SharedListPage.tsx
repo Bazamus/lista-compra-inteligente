@@ -233,7 +233,7 @@ export const SharedListPage: React.FC = () => {
           </div>
 
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {categorias.map((categoria, idx) => {
+            {categorias.map((categoria) => {
               const productos = productosPorCategoria[categoria];
               const subtotal = productos.reduce((sum, p) => sum + p.cantidad * p.precio_unitario, 0);
               const isExpanded = expandedCategories.has(categoria);
