@@ -98,6 +98,7 @@ function AppContent() {
     // Convertir SavedList a formato de resultado
     const resultado = {
       lista: {
+        id_lista: lista.id, // ✅ CRÍTICO: Preservar id_lista para evitar duplicación al guardar
         dias_duracion: lista.dias,
         num_personas: lista.personas,
         presupuesto_total: lista.presupuesto_estimado,
@@ -107,6 +108,7 @@ function AppContent() {
       menus: lista.menus,
       presupuesto_estimado: lista.presupuesto_estimado,
       recomendaciones: lista.recomendaciones,
+      tipo: lista.tipo, // ✅ Preservar el tipo original (IA o Manual)
     };
     setResultadoIA(resultado);
     navigate('/results');
