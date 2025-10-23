@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, ShoppingCart, Info } from 'lucide-react';
 import type { CartProduct } from '../../types/cart.types';
+import { FavoriteButton } from '../common/FavoriteButton';
+import { RecurrentBadge } from '../common/RecurrentBadge';
+import { useFavorites } from '../../hooks/useFavorites';
+import { useRecurrentProducts } from '../../hooks/useRecurrentProducts';
 
 interface ProductCardProps {
   product: CartProduct;
@@ -10,6 +14,8 @@ interface ProductCardProps {
   onIncrement: (productId: number) => void;
   onDecrement: (productId: number) => void;
   onShowDetail: (product: CartProduct) => void;
+  showFavorite?: boolean; // Nueva prop opcional para mostrar botón de favorito
+  showRecurrent?: boolean; // Nueva prop opcional para mostrar badge de recurrente
 }
 
 // Función para obtener gradiente por categoría
@@ -79,9 +85,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onIncrement,
   onDecrement,
   onShowDetail,
+  showFavorite = true, // Por defecto mostrar el botón de favorito
+  showRecurrent = true, // Por defecto mostrar badge de recurrente
 }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isRecurrent } = useRecurrentProducts();
 
   const handleImageError = () => {
     setImageError(true);
@@ -133,24 +143,43 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* Overlay oscuro al hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
 
-        {/* Badge de categoría */}
-        <div className="absolute top-3 left-3">
+        {/* Badges izquierda */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
+          {/* Badge de categoría */}
           <span className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold rounded-full shadow-lg">
             {product.nombre_categoria}
           </span>
+          
+          {/* Badge de recurrente */}
+          {showRecurrent && isRecurrent(product.id_producto) && (
+            <RecurrentBadge size="sm" />
+          )}
         </div>
 
-        {/* Botón info - Más grande */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onShowDetail(product);
-          }}
-          className="absolute top-3 right-3 p-2.5 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
-          title="Ver detalles"
-        >
-          <Info className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-        </button>
+        {/* Botones superiores derechos */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
+          {/* Botón Favorito - Siempre visible */}
+          {showFavorite && (
+            <FavoriteButton
+              isFavorite={isFavorite(product.id_producto)}
+              onToggle={() => toggleFavorite(product.id_producto, product.nombre_producto)}
+              size="md"
+              className="shadow-lg"
+            />
+          )}
+
+          {/* Botón info - Visible al hover */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onShowDetail(product);
+            }}
+            className="p-2.5 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
+            title="Ver detalles"
+          >
+            <Info className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+        </div>
 
         {/* Indicador de producto en carrito */}
         {isInCart && (

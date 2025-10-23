@@ -50,10 +50,17 @@ export const useProducts = () => {
       const offsetNum = (page - 1) * pageSize;
       const hasSearchTerm = filters.searchTerm && filters.searchTerm.trim().length > 0;
 
+      // Encontrar nombres de categoría y subcategoría
+      const selectedCategory = categories.find(c => c.id_categoria === filters.categoriaId);
+      const selectedSubcategory = selectedCategory?.subcategorias?.find(
+        (s: any) => s.id_subcategoria === filters.subcategoriaId
+      );
+
       // Usar la API de productos con autenticación
       const apiFilters = {
         search: hasSearchTerm ? filters.searchTerm : undefined,
-        categoria: filters.categoriaId ? categories.find(c => c.id_categoria === filters.categoriaId)?.nombre_categoria : undefined,
+        categoria: filters.categoriaId && !hasSearchTerm ? selectedCategory?.nombre_categoria : undefined,
+        subcategoria: filters.subcategoriaId && !hasSearchTerm ? selectedSubcategory?.nombre_subcategoria : undefined,
         precio_min: filters.precioMin,
         precio_max: filters.precioMax,
         limit: pageSize,
