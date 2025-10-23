@@ -31,6 +31,7 @@ interface ResultsPageProps {
     }>;
     presupuesto_estimado: number;
     recomendaciones: string[];
+    tipo?: 'IA' | 'Manual'; // Tipo de lista: generada con IA o creada manualmente
   };
   onBackToHome: () => void;
 }
@@ -87,7 +88,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
         presupuesto_estimado: presupuestoActual,
         recomendaciones: resultado.recomendaciones || [],
         // ✅ CRÍTICO: Preservar tipo original (Manual o IA) - NO hardcodear a 'IA'
-        tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual') as const,
+        tipo: (resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual')) as 'IA' | 'Manual',
       };
 
       console.log('📝 resultadoActualizado:', resultadoActualizado);
