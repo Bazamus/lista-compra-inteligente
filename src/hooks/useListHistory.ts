@@ -33,6 +33,65 @@ export interface SavedList {
   resultado?: any; // Datos completos del resultado para migración
 }
 
+// ================================================================
+// NUEVOS TIPOS PARA SPRINT 2: Gestión Avanzada de Historial
+// ================================================================
+
+/**
+ * Filtros para buscar y filtrar listas
+ */
+export interface ListFilters {
+  tipo?: 'IA' | 'Manual' | null;
+  fechaInicio?: Date | null;
+  fechaFin?: Date | null;
+  presupuestoMin?: number | null;
+  presupuestoMax?: number | null;
+  productosMin?: number | null;
+  productosMax?: number | null;
+  busqueda?: string | null; // Búsqueda por nombre
+}
+
+/**
+ * Opciones de ordenamiento para listas
+ */
+export type SortOption = 
+  | 'fecha_desc'      // Más reciente (default)
+  | 'fecha_asc'       // Más antigua
+  | 'presupuesto_desc' // Mayor presupuesto
+  | 'presupuesto_asc'  // Menor presupuesto
+  | 'productos_desc'   // Más productos
+  | 'productos_asc'    // Menos productos
+  | 'nombre_asc';      // Alfabético A-Z
+
+/**
+ * Presets comunes de filtros para UI
+ */
+export const FILTER_PRESETS = {
+  today: {
+    fechaInicio: new Date(new Date().setHours(0, 0, 0, 0)),
+    fechaFin: new Date(new Date().setHours(23, 59, 59, 999))
+  },
+  thisWeek: {
+    fechaInicio: new Date(new Date().setDate(new Date().getDate() - 7)),
+    fechaFin: new Date()
+  },
+  thisMonth: {
+    fechaInicio: new Date(new Date().setDate(1)),
+    fechaFin: new Date()
+  },
+  budget: {
+    low: { presupuestoMax: 20 },
+    medium: { presupuestoMin: 20, presupuestoMax: 50 },
+    high: { presupuestoMin: 50, presupuestoMax: 100 },
+    veryHigh: { presupuestoMin: 100 }
+  },
+  products: {
+    few: { productosMax: 10 },
+    medium: { productosMin: 11, productosMax: 30 },
+    many: { productosMin: 31 }
+  }
+} as const;
+
 export const useListHistory = () => {
   const [savedLists, setSavedLists] = useState<SavedList[]>([]);
   const { user, isAuthenticated } = useAuth();
@@ -572,6 +631,147 @@ export const useListHistory = () => {
     }
   };
 
+  // ================================================================
+  // NUEVAS FUNCIONES SPRINT 2: Gestión Avanzada de Historial
+  // ================================================================
+
+  /**
+   * Duplica una lista existente con un nuevo nombre
+   */
+  const duplicateList = async (listId: string, newName?: string): Promise<string> => {
+    try {
+      console.log('📋 duplicateList: Iniciando duplicación de lista:', listId);
+      
+      const originalList = savedLists.find(l => l.id === listId);
+      if (!originalList) {
+        throw new Error('Lista no encontrada');
+      }
+
+      // Generar nombre automático si no se proporciona
+      const nombreDuplicado = newName || `${originalList.nombre} (Copia)`;
+
+      // Reconstruir el resultado completo para saveList
+      const resultadoDuplicado = {
+        lista: {
+          nombre_lista: nombreDuplicado,
+          num_personas: originalList.personas,
+          dias_duracion: originalList.dias,
+          presupuesto_total: originalList.presupuesto_estimado,
+        },
+        productos: originalList.productos,
+        menus: originalList.menus,
+        presupuesto_estimado: originalList.presupuesto_estimado,
+        recomendaciones: originalList.recomendaciones,
+        tipo: originalList.tipo || 'Manual' as const,
+      };
+
+      console.log('💾 duplicateList: Guardando lista duplicada...');
+      
+      // Usar saveList para guardar (maneja tanto BD como localStorage)
+      await saveList(resultadoDuplicado, nombreDuplicado);
+
+      // Encontrar el ID de la nueva lista (la más reciente)
+      const nuevaLista = savedLists.find(l => l.nombre === nombreDuplicado);
+      const newId = nuevaLista?.id || `duplicate-${Date.now()}`;
+
+      console.log('✅ duplicateList: Lista duplicada con ID:', newId);
+      toast.success(`Lista "${nombreDuplicado}" duplicada correctamente`);
+
+      return newId;
+    } catch (error) {
+      console.error('❌ Error al duplicar lista:', error);
+      toast.error('Error al duplicar la lista');
+      throw error;
+    }
+  };
+
+  /**
+   * Filtra listas según los criterios proporcionados
+   */
+  const filterLists = (filters: ListFilters): SavedList[] => {
+    let filtered = [...savedLists];
+
+    // Filtro por tipo
+    if (filters.tipo) {
+      filtered = filtered.filter(list => list.tipo === filters.tipo);
+    }
+
+    // Filtro por búsqueda de nombre
+    if (filters.busqueda) {
+      const searchLower = filters.busqueda.toLowerCase();
+      filtered = filtered.filter(list =>
+        list.nombre.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filtro por rango de fechas
+    if (filters.fechaInicio) {
+      filtered = filtered.filter(list => new Date(list.fecha) >= filters.fechaInicio!);
+    }
+    if (filters.fechaFin) {
+      filtered = filtered.filter(list => new Date(list.fecha) <= filters.fechaFin!);
+    }
+
+    // Filtro por presupuesto
+    if (filters.presupuestoMin !== null && filters.presupuestoMin !== undefined) {
+      filtered = filtered.filter(list => list.presupuesto_estimado >= filters.presupuestoMin!);
+    }
+    if (filters.presupuestoMax !== null && filters.presupuestoMax !== undefined) {
+      filtered = filtered.filter(list => list.presupuesto_estimado <= filters.presupuestoMax!);
+    }
+
+    // Filtro por número de productos
+    if (filters.productosMin !== null && filters.productosMin !== undefined) {
+      filtered = filtered.filter(list => list.productos.length >= filters.productosMin!);
+    }
+    if (filters.productosMax !== null && filters.productosMax !== undefined) {
+      filtered = filtered.filter(list => list.productos.length <= filters.productosMax!);
+    }
+
+    return filtered;
+  };
+
+  /**
+   * Ordena listas según la opción seleccionada
+   */
+  const sortLists = (lists: SavedList[], sortBy: SortOption): SavedList[] => {
+    const sorted = [...lists];
+
+    switch (sortBy) {
+      case 'fecha_desc':
+        return sorted.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      
+      case 'fecha_asc':
+        return sorted.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      
+      case 'presupuesto_desc':
+        return sorted.sort((a, b) => b.presupuesto_estimado - a.presupuesto_estimado);
+      
+      case 'presupuesto_asc':
+        return sorted.sort((a, b) => a.presupuesto_estimado - b.presupuesto_estimado);
+      
+      case 'productos_desc':
+        return sorted.sort((a, b) => b.productos.length - a.productos.length);
+      
+      case 'productos_asc':
+        return sorted.sort((a, b) => a.productos.length - b.productos.length);
+      
+      case 'nombre_asc':
+        return sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      
+      default:
+        return sorted;
+    }
+  };
+
+  /**
+   * Combina filtros y ordenamiento
+   */
+  const getFilteredAndSortedLists = (filters: ListFilters, sortBy: SortOption = 'fecha_desc'): SavedList[] => {
+    const filtered = filterLists(filters);
+    return sortLists(filtered, sortBy);
+  };
+
   return {
     savedLists,
     saveList,
@@ -580,5 +780,10 @@ export const useListHistory = () => {
     updateListName,
     clearAllLists,
     loadLists,
+    // Nuevas funciones Sprint 2
+    duplicateList,
+    filterLists,
+    sortLists,
+    getFilteredAndSortedLists,
   };
 };

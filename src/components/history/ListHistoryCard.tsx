@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ShoppingCart, Calendar, Users, Euro, Trash2, Eye, Edit3, Check, X, Sparkles, Package
+  ShoppingCart, Calendar, Users, Euro, Trash2, Eye, Edit3, Check, X, Sparkles, Package, Copy, Search
 } from 'lucide-react';
 import type { SavedList } from '../../hooks/useListHistory';
 
@@ -10,13 +10,17 @@ interface ListHistoryCardProps {
   onView: (lista: SavedList) => void;
   onDelete: (listId: string) => void;
   onUpdateName: (listId: string, newName: string) => void;
+  onDuplicate?: (lista: SavedList) => void;
+  onQuickPreview?: (lista: SavedList) => void;
 }
 
 const ListHistoryCard: React.FC<ListHistoryCardProps> = ({
   lista,
   onView,
   onDelete,
-  onUpdateName
+  onUpdateName,
+  onDuplicate,
+  onQuickPreview
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(lista.nombre);
@@ -164,39 +168,67 @@ const ListHistoryCard: React.FC<ListHistoryCardProps> = ({
       </div>
 
       {/* Botones de acción */}
-      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => onView(lista)}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
-        >
-          <Eye className="w-4 h-4" />
-          Ver lista
-        </button>
-
-        {showDeleteConfirm ? (
-          <div className="flex gap-2">
-            <button
-              onClick={handleDelete}
-              className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors"
-            >
-              Confirmar
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        ) : (
+      <div className="space-y-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Fila 1: Botones principales */}
+        <div className="flex gap-2">
           <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors"
-            title="Eliminar lista"
+            onClick={() => onView(lista)}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
+            <Eye className="w-4 h-4" />
+            Ver lista
           </button>
-        )}
+
+          {showDeleteConfirm ? (
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors text-sm"
+              >
+                Confirmar
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors"
+              title="Eliminar lista"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Fila 2: Acciones rápidas */}
+        <div className="flex gap-2">
+          {onQuickPreview && (
+            <button
+              onClick={() => onQuickPreview(lista)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors text-sm"
+              title="Vista previa rápida"
+            >
+              <Search className="w-4 h-4" />
+              Vista previa
+            </button>
+          )}
+          
+          {onDuplicate && (
+            <button
+              onClick={() => onDuplicate(lista)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors text-sm"
+              title="Duplicar lista"
+            >
+              <Copy className="w-4 h-4" />
+              Duplicar
+            </button>
+          )}
+        </div>
       </div>
     </motion.div>
   );

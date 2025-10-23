@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { History, Home, Trash2, Package } from 'lucide-react';
 import { useListHistory } from '../hooks/useListHistory';
+import type { SavedList, ListFilters as ListFiltersType, SortOption } from '../hooks/useListHistory';
 import ListHistoryCard from '../components/history/ListHistoryCard';
-import type { SavedList } from '../hooks/useListHistory';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { DemoBanner } from '../features/auth/components/DemoBanner';
+import { ListFilters } from '../components/common/ListFilters';
+import { DuplicateListModal } from '../components/common/DuplicateListModal';
+import { QuickPreviewModal } from '../components/common/QuickPreviewModal';
 
 interface HistoryPageProps {
   onViewList: (lista: SavedList) => void;
@@ -13,13 +16,47 @@ interface HistoryPageProps {
 }
 
 const HistoryPage: React.FC<HistoryPageProps> = ({ onViewList, onBackToHome }) => {
-  const { savedLists, deleteList, updateListName, clearAllLists } = useListHistory();
+  const { 
+    savedLists, 
+    deleteList, 
+    updateListName, 
+    clearAllLists,
+    duplicateList,
+    getFilteredAndSortedLists 
+  } = useListHistory();
   const { isAuthenticated } = useAuth();
-  const [showClearConfirm, setShowClearConfirm] = React.useState(false);
+  
+  // Estados
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [filters, setFilters] = useState<ListFiltersType>({});
+  const [sortBy, setSortBy] = useState<SortOption>('fecha_desc');
+  const [duplicateModalList, setDuplicateModalList] = useState<SavedList | null>(null);
+  const [previewList, setPreviewList] = useState<SavedList | null>(null);
+
+  // Listas filtradas y ordenadas
+  const displayedLists = useMemo(() => {
+    return getFilteredAndSortedLists(filters, sortBy);
+  }, [savedLists, filters, sortBy, getFilteredAndSortedLists]);
 
   const handleClearAll = () => {
     clearAllLists();
     setShowClearConfirm(false);
+  };
+
+  const handleDuplicate = async (listId: string, newName: string) => {
+    await duplicateList(listId, newName);
+    setDuplicateModalList(null);
+  };
+
+  const handleQuickPreview = (lista: SavedList) => {
+    setPreviewList(lista);
+  };
+
+  const handleViewFullFromPreview = () => {
+    if (previewList) {
+      onViewList(previewList);
+      setPreviewList(null);
+    }
   };
 
   return (
@@ -88,7 +125,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onViewList, onBackToHome }) =
       </div>
 
       {/* Contenido */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {savedLists.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -113,21 +150,67 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onViewList, onBackToHome }) =
             </button>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence mode="popLayout">
-              {savedLists.map((lista) => (
-                <ListHistoryCard
-                  key={lista.id}
-                  lista={lista}
-                  onView={onViewList}
-                  onDelete={deleteList}
-                  onUpdateName={updateListName}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
+          <>
+            {/* Filtros y ordenamiento */}
+            <ListFilters
+              onFiltersChange={setFilters}
+              onSortChange={setSortBy}
+              currentFilters={filters}
+              currentSort={sortBy}
+              totalLists={savedLists.length}
+              filteredCount={displayedLists.length}
+            />
+
+            {/* Grid de listas */}
+            {displayedLists.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12"
+              >
+                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  No se encontraron listas
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Prueba ajustando los filtros de búsqueda
+                </p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <AnimatePresence mode="popLayout">
+                  {displayedLists.map((lista) => (
+                    <ListHistoryCard
+                      key={lista.id}
+                      lista={lista}
+                      onView={onViewList}
+                      onDelete={deleteList}
+                      onUpdateName={updateListName}
+                      onDuplicate={(lista) => setDuplicateModalList(lista)}
+                      onQuickPreview={handleQuickPreview}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {/* Modales */}
+      <DuplicateListModal
+        isOpen={!!duplicateModalList}
+        onClose={() => setDuplicateModalList(null)}
+        onDuplicate={handleDuplicate}
+        list={duplicateModalList}
+      />
+
+      <QuickPreviewModal
+        isOpen={!!previewList}
+        onClose={() => setPreviewList(null)}
+        onViewFull={handleViewFullFromPreview}
+        list={previewList}
+      />
     </div>
   );
 };
