@@ -1,7 +1,59 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from '../../../lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
+
+// Cache de perfil en localStorage
+const PROFILE_CACHE_KEY = 'profile_cache'
+const PROFILE_CACHE_TTL = 5 * 60 * 1000 // 5 minutos
+
+interface ProfileCache {
+  profile: Profile
+  timestamp: number
+  userId: string
+}
+
+const getProfileFromCache = (userId: string): Profile | null => {
+  try {
+    const cached = localStorage.getItem(PROFILE_CACHE_KEY)
+    if (!cached) return null
+
+    const cacheData: ProfileCache = JSON.parse(cached)
+    const now = Date.now()
+
+    // Verificar que sea del mismo usuario y no haya expirado
+    if (cacheData.userId === userId && (now - cacheData.timestamp) < PROFILE_CACHE_TTL) {
+      console.log('✅ Profile cargado desde cache (válido por', Math.round((PROFILE_CACHE_TTL - (now - cacheData.timestamp)) / 1000), 'segundos)')
+      return cacheData.profile
+    }
+
+    // Cache expirado o de otro usuario
+    localStorage.removeItem(PROFILE_CACHE_KEY)
+    return null
+  } catch (error) {
+    console.error('Error al leer cache de perfil:', error)
+    return null
+  }
+}
+
+const saveProfileToCache = (profile: Profile, userId: string): void => {
+  try {
+    const cacheData: ProfileCache = {
+      profile,
+      timestamp: Date.now(),
+      userId
+    }
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData))
+    console.log('💾 Profile guardado en cache')
+  } catch (error) {
+    console.error('Error al guardar cache de perfil:', error)
+  }
+}
+
+const clearProfileCache = (): void => {
+  localStorage.removeItem(PROFILE_CACHE_KEY)
+  console.log('🗑️ Cache de perfil limpiado')
+}
 
 // Interfaz para el perfil de usuario
 interface Profile {
@@ -37,6 +89,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState<Error | null>(null)
+  
+  // Control para evitar llamadas múltiples simultáneas
+  const fetchingProfile = useRef(false)
+  const lastFetchedUserId = useRef<string | null>(null)
 
   useEffect(() => {
     // Obtener sesión actual al montar
@@ -86,11 +142,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const fetchProfile = async (userId: string) => {
+    // Evitar llamadas duplicadas simultáneas
+    if (fetchingProfile.current && lastFetchedUserId.current === userId) {
+      console.log('⏭️ fetchProfile ya en progreso para este usuario, omitiendo...')
+      return
+    }
+
+    // Verificar cache primero
+    const cachedProfile = getProfileFromCache(userId)
+    if (cachedProfile) {
+      setProfile(cachedProfile)
+      setAuthError(null)
+      setLoading(false)
+      lastFetchedUserId.current = userId
+      return
+    }
+
+    fetchingProfile.current = true
+    lastFetchedUserId.current = userId
+
     try {
       console.log('🔄 Fetching profile for user:', userId)
       setAuthError(null) // Limpiar error previo
 
-      // Añadir timeout para evitar que se cuelgue
+      // Añadir timeout de 10 segundos
       const queryPromise = supabase
         .from('profiles')
         .select('*')
@@ -117,8 +192,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: data.id
       })
 
-      setProfile(data as Profile)
-      setAuthError(null) // Limpiar error si fue exitoso
+      const profileData = data as Profile
+      setProfile(profileData)
+      setAuthError(null)
+      
+      // Guardar en cache
+      saveProfileToCache(profileData, userId)
     } catch (error) {
       console.error('❌ Error fetching profile:', error)
       console.error('❌ Error type:', typeof error)
@@ -132,6 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Esto evita que el usuario vea pantalla de login intermitentemente
     } finally {
       setLoading(false)
+      fetchingProfile.current = false
     }
   }
 
@@ -174,6 +254,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null)
       setProfile(null)
       setSession(null)
+      setAuthError(null)
+      
+      // Limpiar cache de perfil
+      clearProfileCache()
+      
+      // Resetear control de fetch
+      fetchingProfile.current = false
+      lastFetchedUserId.current = null
 
       return { error: null }
     } catch (error: any) {

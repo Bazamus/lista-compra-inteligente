@@ -17,34 +17,43 @@ const getCartKey = (userId?: string): string => {
     // Generar ID único para usuario anónimo
     anonId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem(ANON_ID_KEY, anonId);
-    console.log('🆔 Generado ID anónimo para carrito:', anonId);
   }
 
   return `cart_${anonId}`;
 };
 
 export const useCart = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState<Cart>({
     items: [],
     totalItems: 0,
     totalPrice: 0,
   });
+  const [cartLoaded, setCartLoaded] = useState(false);
 
-  // Cargar carrito desde localStorage al iniciar o cuando cambie el usuario
+  // Cargar carrito solo después de que auth esté listo
   useEffect(() => {
-    loadCart();
+    // Solo cargar si auth ya no está loading y aún no hemos cargado el carrito
+    if (!authLoading && !cartLoaded) {
+      loadCart();
+      setCartLoaded(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Recargar carrito cuando cambie el ID del usuario
+  }, [authLoading, user?.id]);
+
+  // Resetear cartLoaded cuando cambie el usuario para recargar
+  useEffect(() => {
+    setCartLoaded(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Guardar carrito en localStorage cuando cambie
   useEffect(() => {
-    if (cart.items.length > 0 || cart.totalItems > 0) {
+    if (cartLoaded && (cart.items.length > 0 || cart.totalItems > 0)) {
       const cartKey = getCartKey(user?.id);
       localStorage.setItem(cartKey, JSON.stringify(cart));
-      console.log('💾 Carrito guardado con key:', cartKey);
     }
-  }, [cart, user?.id]);
+  }, [cart, user?.id, cartLoaded]);
 
   const loadCart = () => {
     try {
@@ -54,15 +63,16 @@ export const useCart = () => {
       if (stored) {
         const loadedCart = JSON.parse(stored);
         setCart(loadedCart);
-        console.log('📦 Carrito cargado desde:', cartKey, '- Items:', loadedCart.items.length);
+        if (loadedCart.items.length > 0) {
+          console.log('📦 Carrito cargado:', loadedCart.items.length, 'items');
+        }
       } else {
-        // Si no hay carrito guardado, inicializar vacío
+        // Si no hay carrito guardado, inicializar vacío (sin log)
         setCart({
           items: [],
           totalItems: 0,
           totalPrice: 0,
         });
-        console.log('🆕 Carrito vacío inicializado para:', cartKey);
       }
     } catch (error) {
       console.error('Error al cargar carrito:', error);
@@ -123,7 +133,6 @@ export const useCart = () => {
       if (newItems.length === 0) {
         const cartKey = getCartKey(user?.id);
         localStorage.removeItem(cartKey);
-        console.log('🗑️ Carrito vacío, removido de localStorage:', cartKey);
       }
 
       return {
@@ -219,7 +228,6 @@ export const useCart = () => {
     });
     const cartKey = getCartKey(user?.id);
     localStorage.removeItem(cartKey);
-    console.log('🗑️ Carrito limpiado:', cartKey);
   }, [user?.id]);
 
   const getProductQuantity = useCallback(
