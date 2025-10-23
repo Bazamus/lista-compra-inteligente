@@ -3,8 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
 // Configuración de Supabase
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://hnnjfqokgbhnydkfuhxy.supabase.co';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+// En Vercel, las API functions NO tienen acceso a variables VITE_*
+// Usar variables sin prefijo o con NEXT_PUBLIC_ para APIs serverless
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hnnjfqokgbhnydkfuhxy.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+
+if (!supabaseKey) {
+  console.error('❌ SUPABASE_ANON_KEY no está configurada en variables de entorno');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ================================================================
