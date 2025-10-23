@@ -206,18 +206,10 @@ export const useListHistory = () => {
       });
       console.log('📦 resultado completo:', JSON.stringify(resultado, null, 2));
 
-      // ✅ NUEVO: Si la lista viene de generar-lista.ts, ya tiene id_lista y user_id
-      // Solo necesitamos actualizar si el usuario renombra
-      if (resultado.lista?.id_lista && nombre) {
-        console.log('🔄 Actualizando nombre de lista existente...');
+      // ✅ FIX: Si la lista ya tiene id_lista, SIEMPRE actualizar (no duplicar)
+      if (resultado.lista?.id_lista) {
+        console.log('🔄 Lista existente detectada, actualizando en lugar de crear nueva...');
         return await updateListInDB(resultado, nombre);
-      }
-
-      // Si viene de generar-lista.ts y ya está guardada, solo retornar el ID
-      if (resultado.lista?.id_lista && resultado.lista?.user_id === user.id) {
-        console.log('✅ Lista ya guardada correctamente en BD, retornando ID');
-        await loadListsFromDB(); // Recargar para mostrar en UI
-        return resultado.lista.id_lista;
       }
 
       // Solo para listas manuales del carrito (no tienen id_lista)
@@ -407,6 +399,9 @@ export const useListHistory = () => {
       // Recargar listas desde BD
       console.log('🔄 Recargando listas desde BD...');
       await loadListsFromDB();
+      
+      // Toast de éxito
+      toast.success('Lista actualizada correctamente');
 
       return listId;
     } catch (error) {

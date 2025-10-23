@@ -69,13 +69,14 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
       console.log('🎯 ResultsPage handleSaveList: Iniciando guardado...');
       console.log('📦 resultado original:', resultado);
       console.log('🔍 resultado.lista:', resultado.lista);
-      console.log('🔍 lista properties:', Object.keys(resultado.lista || {}));
+      console.log('🔍 lista.id_lista:', resultado.lista?.id_lista);
 
       // Actualizar resultado con productos actuales
       const resultadoActualizado = {
         lista: {
           ...resultado.lista,
-          // ✅ Asegurar que tenga nombre_lista
+          // ✅ CRÍTICO: Preservar id_lista si existe para actualizar en lugar de duplicar
+          id_lista: resultado.lista?.id_lista,
           nombre_lista: resultado.lista?.nombre_lista || lista.nombre_lista || 'Lista generada con IA',
           num_personas: resultado.lista?.num_personas || lista.num_personas,
           dias_duracion: resultado.lista?.dias_duracion || lista.dias_duracion,
@@ -89,8 +90,9 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
       };
 
       console.log('📝 resultadoActualizado:', resultadoActualizado);
-      console.log('📝 resultadoActualizado.lista:', resultadoActualizado.lista);
+      console.log('📝 resultadoActualizado.lista.id_lista:', resultadoActualizado.lista.id_lista);
 
+      // Si la lista ya tiene id_lista, se actualizará; si no, se creará nueva
       await saveList(resultadoActualizado);
 
       console.log('✅ ResultsPage: Lista guardada exitosamente');
@@ -98,7 +100,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
 
       // Mostrar mensaje diferenciado según modo
       const mensaje = isAuthenticated
-        ? 'Lista guardada en tu cuenta'
+        ? (resultado.lista?.id_lista ? 'Lista actualizada correctamente' : 'Lista guardada en tu cuenta')
         : 'Lista guardada temporalmente (modo Demo)';
 
       console.log(mensaje);
