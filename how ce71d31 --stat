@@ -1,0 +1,61 @@
+[33mce71d31[m FIX: Eliminar botÃ³n 'Generar Lista' problemÃ¡tico del paso 8 - Solo mostrar botÃ³n Siguiente en pasos intermedios
+[1mdiff --git a/src/components/forms/ConversationalForm.tsx b/src/components/forms/ConversationalForm.tsx[m
+[1mindex b13d7ee..5b22bf0 100644[m
+[1m--- a/src/components/forms/ConversationalForm.tsx[m
+[1m+++ b/src/components/forms/ConversationalForm.tsx[m
+[36m@@ -1,6 +1,6 @@[m
+ import React, { useEffect } from 'react';[m
+ import { motion, AnimatePresence } from 'framer-motion';[m
+[31m-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';[m
+[32m+[m[32mimport { ChevronLeft, ChevronRight } from 'lucide-react';[m
+ import type { ConversationalFormProps, FormStep } from '../../types/form.types';[m
+ import { useMultiStepForm } from '../../hooks/useMultiStepForm';[m
+ import ProgressIndicator from './ProgressIndicator';[m
+[36m@@ -222,30 +222,23 @@[m [mconst ConversationalForm: React.FC<ConversationalFormProps> = ({[m
+             Anterior[m
+           </button>[m
+ [m
+[31m-          {/* Botón Siguiente/Finalizar */}[m
+[31m-          <button[m
+[31m-            onClick={handleNextStep}[m
+[31m-            disabled={!canProceed()}[m
+[31m-            className={`[m
+[31m-              flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-all duration-200[m
+[31m-              ${canProceed()[m
+[31m-                ? 'bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'[m
+[31m-                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'[m
+[31m-              }[m
+[31m-            `}[m
+[31m-          >[m
+[31m-            {isLast ? ([m
+[31m-              <>[m
+[31m-                <Check size={20} />[m
+[31m-                Generar Lista[m
+[31m-              </>[m
+[31m-            ) : ([m
+[31m-              <>[m
+[31m-                Siguiente[m
+[31m-                <ChevronRight size={20} />[m
+[31m-              </>[m
+[31m-            )}[m
+[31m-          </button>[m
+[32m+[m[32m          {/* Botón Siguiente - Solo mostrar si no es el último paso */}[m
+[32m+[m[32m          {!isLast && ([m
+[32m+[m[32m            <button[m
+[32m+[m[32m              onClick={handleNextStep}[m
+[32m+[m[32m              disabled={!canProceed()}[m
+[32m+[m[32m              className={`[m
+[32m+[m[32m                flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-all duration-200[m
+[32m+[m[32m                ${canProceed()[m
+[32m+[m[32m                  ? 'bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'[m
+[32m+[m[32m                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'[m
+[32m+[m[32m                }[m
+[32m+[m[32m              `}[m
+[32m+[m[32m            >[m
+[32m+[m[32m              Siguiente[m
+[32m+[m[32m              <ChevronRight size={20} />[m
+[32m+[m[32m            </button>[m
+[32m+[m[32m          )}[m
+         </motion.div>[m
+ [m
+         {/* Botón cancelar (opcional) */}[m
