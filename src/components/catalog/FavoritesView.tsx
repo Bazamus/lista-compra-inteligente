@@ -4,16 +4,15 @@ import { Star, Package, ShoppingBag } from 'lucide-react';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useCart } from '../../hooks/useCart';
 import ProductCard from './ProductCard';
-import { productosApi } from '../../services/api';
+import { productosApi } from '../../lib/api';
 import type { CartProduct } from '../../types/cart.types';
 import { toast } from 'sonner';
 
 export const FavoritesView = () => {
   const { getFavoriteIds, isLoading: loadingFavorites } = useFavorites();
-  const { addProduct, getProductQuantity } = useCart();
+  const { addProduct, getProductQuantity, incrementQuantity, decrementQuantity, removeProduct } = useCart();
   const [favoriteProducts, setFavoriteProducts] = useState<CartProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<CartProduct | null>(null);
 
   // Cargar productos favoritos
   useEffect(() => {
@@ -35,12 +34,28 @@ export const FavoritesView = () => {
       // Como la API no tiene endpoint para buscar por IDs múltiples,
       // vamos a cargar todos los productos y filtrar
       // (En producción, sería mejor tener un endpoint específico)
-      const { data } = await productosApi.obtener({
+      const { productos } = await productosApi.obtener({
         limit: 1000 // Cargar muchos para asegurar que tenemos todos
       });
 
-      const favProducts = data.filter(p => favoriteIds.includes(p.id_producto));
-      setFavoriteProducts(favProducts);
+      const favProducts = productos.filter((p: any) => favoriteIds.includes(p.id_producto));
+      
+      // Transformar a formato CartProduct
+      const transformedProducts: CartProduct[] = favProducts.map((p: any) => ({
+        id_producto: p.id_producto,
+        nombre_producto: p.nombre_producto,
+        formato_venta: p.formato_venta,
+        precio_formato_venta: p.precio_formato_venta,
+        unidad_medida: p.unidad_medida,
+        precio_por_unidad: p.precio_por_unidad,
+        cantidad_unidad_medida: p.cantidad_unidad_medida,
+        url_enlace: p.url_enlace,
+        imagen_url: p.imagen_url,
+        nombre_categoria: p.subcategorias?.categorias?.nombre_categoria || 'Sin categoría',
+        nombre_subcategoria: p.subcategorias?.nombre_subcategoria || 'Sin subcategoría',
+      }));
+      
+      setFavoriteProducts(transformedProducts);
     } catch (error) {
       console.error('Error loading favorite products:', error);
       toast.error('Error al cargar favoritos');
@@ -49,15 +64,36 @@ export const FavoritesView = () => {
     }
   };
 
-  const handleAddToCart = (product: CartProduct) => {
-    addProduct(product);
-    toast.success(`${product.nombre} añadido a la lista`, {
+  const handleAddToCart = (product: CartProduct, quantity: number) => {
+    addProduct(product, quantity);
+    toast.success(`${product.nombre_producto} añadido a la lista`, {
       icon: '🛒'
     });
   };
 
+  const handleAddAllToCart = () => {
+    let addedCount = 0;
+    favoriteProducts.forEach(product => {
+      const quantity = getProductQuantity(product.id_producto);
+      if (quantity === 0) {
+        addProduct(product, 1);
+        addedCount++;
+      }
+    });
+    if (addedCount > 0) {
+      toast.success(`${addedCount} productos añadidos a la lista`, {
+        icon: '🛒'
+      });
+    } else {
+      toast.info('Todos los favoritos ya están en tu lista', {
+        icon: 'ℹ️'
+      });
+    }
+  };
+
   const handleShowDetail = (product: CartProduct) => {
-    setSelectedProduct(product);
+    // Podríamos abrir un modal aquí en el futuro
+    console.log('Detalle de producto:', product);
   };
 
   if (loadingFavorites || loading) {
@@ -111,7 +147,7 @@ export const FavoritesView = () => {
         </div>
         
         <button
-          onClick={() => favoriteProducts.forEach(p => handleAddToCart(p))}
+          onClick={handleAddAllToCart}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
         >
           <ShoppingBag className="w-5 h-5" />
@@ -133,9 +169,13 @@ export const FavoritesView = () => {
             >
               <ProductCard
                 product={product}
-                onAddToCart={() => handleAddToCart(product)}
-                onShowDetail={() => handleShowDetail(product)}
-                currentQuantity={getProductQuantity(product.id_producto)}
+                quantity={getProductQuantity(product.id_producto)}
+                onAddToCart={handleAddToCart}
+                onIncrement={(id) => incrementQuantity(id)}
+                onDecrement={(id) => decrementQuantity(id)}
+                onShowDetail={handleShowDetail}
+                showFavorite={true}
+                showRecurrent={false}
               />
             </motion.div>
           ))}
