@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import ProductSearchModal from '../components/products/ProductSearchModal';
 import ProductEditModal from '../components/products/ProductEditModal';
+import { ShareModal } from '../components/common/ShareModal';
 import { useListHistory } from '../hooks/useListHistory';
 import { exportToPDF } from '../utils/exportPDF';
 import { exportToExcel } from '../utils/exportExcel';
@@ -45,6 +46,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const [productoEditando, setProductoEditando] = useState<any>(null);
   const [listaSaved, setListaSaved] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const { lista, menus, recomendaciones } = resultado;
   const { saveList } = useListHistory();
@@ -375,6 +377,18 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                     )}
                   </button>
 
+                  {/* Botón Compartir - Solo si está autenticado y lista guardada */}
+                  {isAuthenticated && resultado.lista?.id_lista && (
+                    <button
+                      onClick={() => setShowShareModal(true)}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all"
+                      title="Compartir lista"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Compartir</span>
+                    </button>
+                  )}
+
                   {/* Menú de exportación - Premium Feature */}
                   <PremiumGate feature="Exportación PDF/Excel">
                     <div className="relative col-span-1">
@@ -665,6 +679,14 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
         producto={productoEditando}
         onSave={handleSaveProduct}
         onDelete={handleDeleteProduct}
+      />
+
+      {/* Modal de compartir */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        listaId={resultado.lista?.id_lista || ''}
+        listaNombre={lista.nombre_lista || 'Mi lista'}
       />
     </div>
   );

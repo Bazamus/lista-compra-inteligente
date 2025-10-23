@@ -11,6 +11,7 @@ import ResultsPage from './pages/ResultsPage';
 import HistoryPage from './pages/HistoryPage';
 import CatalogPage from './pages/CatalogPage';
 import ManualListResults from './pages/ManualListResults';
+import { SharedListPage } from './pages/SharedListPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './features/admin/pages/AdminDashboard';
@@ -190,6 +191,12 @@ function AppContent() {
         <Route
           path="/history"
           element={<HistoryPage onViewList={handleViewList} onBackToHome={handleBackToHome} />}
+        />
+
+        {/* Ruta pública para listas compartidas */}
+        <Route
+          path="/shared/:token"
+          element={<SharedListPage />}
         />
 
         {/* Rutas de autenticación */}

@@ -37,6 +37,22 @@ Ejecutar los scripts en **Supabase Dashboard > SQL Editor** en el siguiente orde
 
 ---
 
+### 4. Sistema de compartir listas (05_create_list_shares.sql)
+**Descripción**:
+- Crea tabla `list_shares` para gestionar enlaces públicos compartidos
+- Genera tokens seguros para acceso sin autenticación
+- Soporta expiración configurable de enlaces
+- Contador de visitas para analytics
+- RLS configurado para privacidad y acceso público
+
+**Ejecutar**: Copiar y pegar todo el contenido del archivo `05_create_list_shares.sql`
+
+**Funciones incluidas**:
+- `increment_share_visits(token)` - Incrementa contador de visitas
+- `cleanup_expired_shares()` - Limpia enlaces expirados (ejecutar periódicamente)
+
+---
+
 ## 🔐 Crear Primer Usuario Admin
 
 Después de ejecutar los 3 scripts anteriores:
