@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AppProvider } from './contexts/AppContext';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { ProtectedRoute } from './features/auth/components/ProtectedRoute';
@@ -237,6 +238,7 @@ function App() {
       <AuthProvider>
         <AppProvider>
           <div className="App">
+            <Toaster position="top-right" richColors closeButton />
             <AppContent />
           </div>
         </AppProvider>

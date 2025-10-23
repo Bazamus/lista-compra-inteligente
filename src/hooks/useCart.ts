@@ -1,36 +1,76 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Cart, CartItem, CartProduct } from '../types/cart.types';
+import { useAuth } from '../features/auth/hooks/useAuth';
 
-const CART_STORAGE_KEY = 'shopping_cart';
+// Función para generar key de localStorage con namespacing por usuario
+const getCartKey = (userId?: string): string => {
+  if (userId) {
+    // Usuario autenticado: usar su ID
+    return `cart_${userId}`;
+  }
+
+  // Usuario anónimo: generar ID persistente único
+  const ANON_ID_KEY = 'anon_cart_id';
+  let anonId = localStorage.getItem(ANON_ID_KEY);
+
+  if (!anonId) {
+    // Generar ID único para usuario anónimo
+    anonId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem(ANON_ID_KEY, anonId);
+    console.log('🆔 Generado ID anónimo para carrito:', anonId);
+  }
+
+  return `cart_${anonId}`;
+};
 
 export const useCart = () => {
+  const { user } = useAuth();
   const [cart, setCart] = useState<Cart>({
     items: [],
     totalItems: 0,
     totalPrice: 0,
   });
 
-  // Cargar carrito desde localStorage al iniciar
+  // Cargar carrito desde localStorage al iniciar o cuando cambie el usuario
   useEffect(() => {
     loadCart();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Recargar carrito cuando cambie el ID del usuario
 
   // Guardar carrito en localStorage cuando cambie
   useEffect(() => {
     if (cart.items.length > 0 || cart.totalItems > 0) {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      const cartKey = getCartKey(user?.id);
+      localStorage.setItem(cartKey, JSON.stringify(cart));
+      console.log('💾 Carrito guardado con key:', cartKey);
     }
-  }, [cart]);
+  }, [cart, user?.id]);
 
   const loadCart = () => {
     try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
+      const cartKey = getCartKey(user?.id);
+      const stored = localStorage.getItem(cartKey);
+      
       if (stored) {
         const loadedCart = JSON.parse(stored);
         setCart(loadedCart);
+        console.log('📦 Carrito cargado desde:', cartKey, '- Items:', loadedCart.items.length);
+      } else {
+        // Si no hay carrito guardado, inicializar vacío
+        setCart({
+          items: [],
+          totalItems: 0,
+          totalPrice: 0,
+        });
+        console.log('🆕 Carrito vacío inicializado para:', cartKey);
       }
     } catch (error) {
       console.error('Error al cargar carrito:', error);
+      setCart({
+        items: [],
+        totalItems: 0,
+        totalPrice: 0,
+      });
     }
   };
 
@@ -81,7 +121,9 @@ export const useCart = () => {
 
       // Si el carrito queda vacío, limpiar localStorage
       if (newItems.length === 0) {
-        localStorage.removeItem(CART_STORAGE_KEY);
+        const cartKey = getCartKey(user?.id);
+        localStorage.removeItem(cartKey);
+        console.log('🗑️ Carrito vacío, removido de localStorage:', cartKey);
       }
 
       return {
@@ -143,7 +185,8 @@ export const useCart = () => {
         const { totalItems, totalPrice } = calculateTotals(newItems);
 
         if (newItems.length === 0) {
-          localStorage.removeItem(CART_STORAGE_KEY);
+          const cartKey = getCartKey(user?.id);
+          localStorage.removeItem(cartKey);
         }
 
         return {
@@ -174,8 +217,10 @@ export const useCart = () => {
       totalItems: 0,
       totalPrice: 0,
     });
-    localStorage.removeItem(CART_STORAGE_KEY);
-  }, []);
+    const cartKey = getCartKey(user?.id);
+    localStorage.removeItem(cartKey);
+    console.log('🗑️ Carrito limpiado:', cartKey);
+  }, [user?.id]);
 
   const getProductQuantity = useCallback(
     (productId: number): number => {

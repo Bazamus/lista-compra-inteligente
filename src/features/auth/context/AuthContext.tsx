@@ -20,6 +20,7 @@ interface AuthContextType {
   profile: Profile | null
   session: Session | null
   loading: boolean
+  authError: Error | null
   isAdmin: boolean
   isAuthenticated: boolean
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState<Error | null>(null)
 
   useEffect(() => {
     // Obtener sesión actual al montar
@@ -86,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     try {
       console.log('🔄 Fetching profile for user:', userId)
+      setAuthError(null) // Limpiar error previo
 
       // Añadir timeout para evitar que se cuelgue
       const queryPromise = supabase
@@ -103,7 +106,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('❌ Error fetching profile:', error)
         console.error('❌ Detalles del error:', JSON.stringify(error, null, 2))
-        throw error
+        const profileError = new Error(error.message || 'Error al cargar perfil')
+        setAuthError(profileError)
+        throw profileError
       }
 
       console.log('✅ Profile fetched:', {
@@ -113,12 +118,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
 
       setProfile(data as Profile)
+      setAuthError(null) // Limpiar error si fue exitoso
     } catch (error) {
       console.error('❌ Error fetching profile:', error)
       console.error('❌ Error type:', typeof error)
       console.error('❌ Error message:', (error as any)?.message || 'No message')
+      
+      // Guardar el error en el estado
+      const errorObj = error instanceof Error ? error : new Error('Error desconocido al cargar perfil')
+      setAuthError(errorObj)
+      
       // NO limpiar el perfil si hay error temporal, mantener el estado
-      // setProfile(null)
+      // Esto evita que el usuario vea pantalla de login intermitentemente
     } finally {
       setLoading(false)
     }
@@ -184,6 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     profile,
     session,
     loading,
+    authError,
     isAdmin,
     isAuthenticated,
     signIn,

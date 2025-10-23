@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import { retryWithBackoff } from '../utils/retryWithBackoff';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'shoppingListHistory';
 const MAX_LISTS = 10;
@@ -71,35 +73,37 @@ export const useListHistory = () => {
 
       console.log('📊 loadListsFromDB: Cargando listas para user:', user.id);
 
-      // Añadir timeout para evitar que se cuelgue
-      const queryPromise = supabase
-        .from('listas_compra')
-        .select(`
-          id_lista,
-          nombre_lista,
-          created_at,
-          presupuesto_total,
-          num_personas,
-          dias_duracion,
-          tipo_comidas,
-          productos_basicos,
-          productos_adicionales,
-          data_json
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(MAX_LISTS);
+      // Usar retryWithBackoff para manejar errores temporales
+      const { data, error } = await retryWithBackoff(async () => {
+        const queryPromise = supabase
+          .from('listas_compra')
+          .select(`
+            id_lista,
+            nombre_lista,
+            created_at,
+            presupuesto_total,
+            num_personas,
+            dias_duracion,
+            tipo_comidas,
+            productos_basicos,
+            productos_adicionales,
+            data_json
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(MAX_LISTS);
 
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La consulta tardó más de 30 segundos')), 30000)
-      );
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: La consulta tardó más de 30 segundos')), 30000)
+        );
 
-      console.log('🔄 Ejecutando query con timeout...');
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+        return await Promise.race([queryPromise, timeoutPromise]) as any;
+      }, 3, 1000);
 
       if (error) {
         console.error('❌ Error en query Supabase:', error);
         console.error('❌ Detalles del error:', JSON.stringify(error, null, 2));
+        toast.error('Error al cargar listas. Reintentando...');
         throw error;
       }
 
@@ -189,7 +193,7 @@ export const useListHistory = () => {
   };
 
   const saveListToDB = async (resultado: any, nombre?: string): Promise<string> => {
-    try {
+    return await retryWithBackoff(async () => {
       if (!user) throw new Error('Usuario no autenticado');
 
       console.log('💾 saveListToDB: Iniciando guardado para user:', user.id);
@@ -296,15 +300,25 @@ export const useListHistory = () => {
       }
 
       await loadListsFromDB();
+      toast.success('Lista guardada correctamente');
       return listaInsertada.id_lista;
-    } catch (error) {
-      console.error('❌ Error saving list to DB:', error);
+    }, 3, 1000).catch((error) => {
+      console.error('❌ Error saving list to DB después de reintentos:', error);
       console.error('❌ Error type:', typeof error);
       console.error('❌ Error message:', (error as any)?.message || 'No message');
-      console.error('❌ Error stack:', (error as any)?.stack || 'No stack');
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      
+      // Guardar en localStorage como backup
+      try {
+        const backupKey = `backup_lista_${Date.now()}`;
+        localStorage.setItem(backupKey, JSON.stringify(resultado));
+        toast.error('Error al guardar en BD. Lista respaldada localmente.');
+        console.log('💾 Lista respaldada en localStorage:', backupKey);
+      } catch (backupError) {
+        toast.error('Error al guardar la lista. Por favor, intenta de nuevo.');
+      }
+      
       throw error;
-    }
+    });
   };
 
   const updateListInDB = async (resultado: any, nombre?: string): Promise<string> => {
