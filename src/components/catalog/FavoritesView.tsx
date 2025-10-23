@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 export const FavoritesView = () => {
   const { getFavoriteIds, isLoading: loadingFavorites } = useFavorites();
-  const { addProduct, getProductQuantity, incrementQuantity, decrementQuantity, removeProduct } = useCart();
+  const { addProduct, getProductQuantity, incrementQuantity, decrementQuantity } = useCart();
   const [favoriteProducts, setFavoriteProducts] = useState<CartProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
