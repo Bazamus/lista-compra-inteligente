@@ -86,7 +86,8 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
         menus: resultado.menus || {},
         presupuesto_estimado: presupuestoActual,
         recomendaciones: resultado.recomendaciones || [],
-        tipo: 'IA' as const, // ✅ Especificar tipo explícitamente
+        // ✅ CRÍTICO: Preservar tipo original (Manual o IA) - NO hardcodear a 'IA'
+        tipo: resultado.tipo || (Object.keys(resultado.menus || {}).length > 0 ? 'IA' : 'Manual') as const,
       };
 
       console.log('📝 resultadoActualizado:', resultadoActualizado);
