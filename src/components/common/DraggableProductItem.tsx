@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, CheckCircle, Circle } from 'lucide-react';
+import { GripVertical, CheckCircle, Circle, FileText } from 'lucide-react';
 import { QuantityControls } from './QuantityControls';
 
 interface DraggableProductItemProps {
@@ -11,12 +11,14 @@ interface DraggableProductItemProps {
     precio_unitario: number;
     categoria: string;
     esencial: boolean;
+    nota?: string;
   };
   isChecked: boolean;
   onToggle: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
   onRemove: () => void;
+  onAddNote: () => void;
 }
 
 export const DraggableProductItem = ({
@@ -25,7 +27,8 @@ export const DraggableProductItem = ({
   onToggle,
   onIncrement,
   onDecrement,
-  onRemove
+  onRemove,
+  onAddNote
 }: DraggableProductItemProps) => {
   const {
     attributes,
@@ -83,13 +86,35 @@ export const DraggableProductItem = ({
             className="flex-1 min-w-0 cursor-pointer"
             onClick={onToggle}
           >
-            <p className={`font-medium text-sm sm:text-base ${
-              isChecked
-                ? 'line-through text-gray-400 dark:text-gray-500'
-                : 'text-gray-900 dark:text-white'
-            }`}>
-              {producto.nombre}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className={`font-medium text-sm sm:text-base ${
+                isChecked
+                  ? 'line-through text-gray-400 dark:text-gray-500'
+                  : 'text-gray-900 dark:text-white'
+              }`}>
+                {producto.nombre}
+              </p>
+              {/* Botón de nota */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddNote();
+                }}
+                className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  producto.nota ? 'text-blue-500' : 'text-gray-400'
+                }`}
+                title={producto.nota ? 'Editar nota' : 'Añadir nota'}
+              >
+                <FileText className="w-4 h-4" />
+              </button>
+            </div>
+            {/* Mostrar nota si existe */}
+            {producto.nota && (
+              <p className="text-xs text-blue-600 dark:text-blue-400 italic mt-1 flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                {producto.nota}
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-1">
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {producto.precio_unitario.toFixed(2)}€/ud

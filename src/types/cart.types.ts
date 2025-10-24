@@ -17,6 +17,7 @@ export interface CartProduct {
 export interface CartItem {
   product: CartProduct;
   quantity: number; // Cantidad de unidades (ej: 2 botellas)
+  nota?: string; // Nota opcional del usuario (ej: "comprar ecológico", "sin lactosa")
 }
 
 export interface Cart {

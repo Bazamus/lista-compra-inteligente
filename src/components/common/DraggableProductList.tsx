@@ -22,6 +22,7 @@ interface Product {
   precio_unitario: number;
   categoria: string;
   esencial: boolean;
+  nota?: string;
 }
 
 interface DraggableProductListProps {
@@ -32,6 +33,7 @@ interface DraggableProductListProps {
   onIncrement: (productId: number) => void;
   onDecrement: (productId: number) => void;
   onRemove: (productId: number, productName: string) => void;
+  onAddNote: (producto: Product) => void;
 }
 
 export const DraggableProductList = ({
@@ -41,7 +43,8 @@ export const DraggableProductList = ({
   onReorder,
   onIncrement,
   onDecrement,
-  onRemove
+  onRemove,
+  onAddNote
 }: DraggableProductListProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -86,6 +89,7 @@ export const DraggableProductList = ({
               onIncrement={() => onIncrement(producto.id_producto)}
               onDecrement={() => onDecrement(producto.id_producto)}
               onRemove={() => onRemove(producto.id_producto, producto.nombre)}
+              onAddNote={() => onAddNote(producto)}
             />
           ))}
         </div>

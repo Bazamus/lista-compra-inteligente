@@ -93,7 +93,7 @@ export const PrintableList = forwardRef<HTMLDivElement, PrintableListProps>(
                     {/* Checkbox para imprimir */}
                     <div className="w-5 h-5 border-2 border-gray-400 rounded flex-shrink-0" />
                     
-                    {/* Nombre y cantidad */}
+                    {/* Nombre, cantidad y nota */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">
                         {producto.nombre}
@@ -101,6 +101,11 @@ export const PrintableList = forwardRef<HTMLDivElement, PrintableListProps>(
                       <p className="text-xs text-gray-600">
                         Cantidad: {producto.cantidad}
                       </p>
+                      {producto.nota && (
+                        <p className="text-xs text-blue-700 italic mt-1">
+                          📝 {producto.nota}
+                        </p>
+                      )}
                     </div>
 
                     {/* Precio */}

@@ -90,7 +90,9 @@ export const generatePDF = ({
     yPosition += 7;
 
     // Preparar datos para autoTable
-    const tableData = items.map((producto) => {
+    const tableData: any[] = [];
+    items.forEach((producto) => {
+      // Fila principal del producto
       const row: any[] = [
         '☐', // Checkbox
         producto.nombre,
@@ -102,7 +104,23 @@ export const generatePDF = ({
         row.push(`${(producto.cantidad * producto.precio_unitario).toFixed(2)}€`);
       }
 
-      return row;
+      tableData.push(row);
+
+      // Si tiene nota, agregar fila adicional
+      if (producto.nota) {
+        const noteRow: any[] = [
+          '', // Sin checkbox
+          `📝 ${producto.nota}`,
+          '', // Sin cantidad
+        ];
+        
+        if (includePrices) {
+          noteRow.push(''); // Sin precio/ud
+          noteRow.push(''); // Sin total
+        }
+        
+        tableData.push(noteRow);
+      }
     });
 
     const columns = includePrices

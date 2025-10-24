@@ -4,7 +4,7 @@ import {
   ShoppingCart, Calendar, Users, Euro, TrendingDown, Sparkles,
   CheckCircle, Circle, Download, Share2, Home, ChevronDown,
   ChevronUp, Package, Utensils, Plus, Save, Check, GripVertical,
-  List, RotateCcw
+  List, RotateCcw, FileText
 } from 'lucide-react';
 import ProductSearchModal from '../components/products/ProductSearchModal';
 import ProductEditModal from '../components/products/ProductEditModal';
@@ -14,6 +14,7 @@ import { DraggableProductList } from '../components/common/DraggableProductList'
 import { WeeklyMenuCalendar } from '../components/common/WeeklyMenuCalendar';
 import { ExportOptionsModal, type ExportOptions } from '../components/common/ExportOptionsModal';
 import { PrintableList } from '../components/common/PrintableList';
+import { ProductNoteModal } from '../components/common/ProductNoteModal';
 import { useListHistory } from '../hooks/useListHistory';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
 import { exportToPDF } from '../utils/exportPDF';
@@ -60,6 +61,8 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const [useDraggableView, setUseDraggableView] = useState(false); // Vista drag & drop
   const [showExportModal, setShowExportModal] = useState(false);
   const printableRef = React.useRef<HTMLDivElement>(null);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [productoConNota, setProductoConNota] = useState<any>(null);
 
   const { lista, menus, recomendaciones } = resultado;
   const { saveList } = useListHistory();
@@ -135,6 +138,40 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
         alert('No se pudo guardar la lista: ' + error.message);
       }
     }
+  };
+
+  // ================================================================
+  // FUNCIONES SPRINT 4: Notas por Producto
+  // ================================================================
+
+  /**
+   * Abrir modal para añadir/editar nota de un producto
+   */
+  const handleAddNote = (producto: any) => {
+    setProductoConNota(producto);
+    setShowNoteModal(true);
+  };
+
+  /**
+   * Guardar nota de un producto
+   */
+  const handleSaveNote = (nota: string) => {
+    if (!productoConNota) return;
+
+    setProductos(prevProductos =>
+      prevProductos.map(p =>
+        p.id_producto === productoConNota.id_producto
+          ? { ...p, nota: nota || undefined }
+          : p
+      )
+    );
+
+    toast.success(nota ? 'Nota añadida' : 'Nota eliminada', {
+      description: productoConNota.nombre,
+      duration: 2000,
+    });
+
+    setProductoConNota(null);
   };
 
   // ================================================================
@@ -652,6 +689,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                     onIncrement={handleIncrementQuantity}
                     onDecrement={handleDecrementQuantity}
                     onRemove={handleRemoveProduct}
+                    onAddNote={handleAddNote}
                   />
                 </div>
               ) : (
@@ -697,13 +735,35 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                                 className="flex-1 min-w-0 cursor-pointer"
                                 onClick={() => toggleProduct(producto.id_producto)}
                               >
-                                <p className={`font-medium text-sm sm:text-base ${
-                                  checkedProducts.has(producto.id_producto)
-                                    ? 'line-through text-gray-400 dark:text-gray-500'
-                                    : 'text-gray-900 dark:text-white'
-                                }`}>
-                                  {producto.nombre}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className={`font-medium text-sm sm:text-base ${
+                                    checkedProducts.has(producto.id_producto)
+                                      ? 'line-through text-gray-400 dark:text-gray-500'
+                                      : 'text-gray-900 dark:text-white'
+                                  }`}>
+                                    {producto.nombre}
+                                  </p>
+                                  {/* Botón de nota */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddNote(producto);
+                                    }}
+                                    className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                                      producto.nota ? 'text-blue-500' : 'text-gray-400'
+                                    }`}
+                                    title={producto.nota ? 'Editar nota' : 'Añadir nota'}
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                {/* Mostrar nota si existe */}
+                                {producto.nota && (
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 italic mt-1 flex items-center gap-1">
+                                    <FileText className="w-3 h-3" />
+                                    {producto.nota}
+                                  </p>
+                                )}
                                 <div className="flex items-center gap-2 mt-1">
                                   <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                     {producto.precio_unitario.toFixed(2)}€/ud
@@ -883,6 +943,18 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
         onClose={() => setShowExportModal(false)}
         onExportPDF={handleGeneratePDF}
         onPrint={handlePrintWithOptions}
+      />
+
+      {/* Modal de nota de producto */}
+      <ProductNoteModal
+        isOpen={showNoteModal}
+        onClose={() => {
+          setShowNoteModal(false);
+          setProductoConNota(null);
+        }}
+        productName={productoConNota?.nombre || ''}
+        currentNote={productoConNota?.nota || ''}
+        onSave={handleSaveNote}
       />
 
       {/* Componente oculto para impresión */}
