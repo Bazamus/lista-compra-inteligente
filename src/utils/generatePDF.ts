@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // Extender el tipo jsPDF para incluir autoTable
 declare module 'jspdf' {
@@ -128,7 +128,7 @@ export const generatePDF = ({
       ? ['', 'Producto', 'Cant.', 'Precio/ud', 'Total']
       : ['', 'Producto', 'Cant.'];
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [columns],
       body: tableData,
@@ -153,7 +153,7 @@ export const generatePDF = ({
       margin: { left: 14, right: 14 },
     });
 
-    yPosition = doc.lastAutoTable?.finalY || yPosition + 10;
+    yPosition = (doc as any).lastAutoTable?.finalY || yPosition + 10;
     yPosition += 5; // Espacio entre categorías
   });
 
