@@ -8,11 +8,13 @@ import {
 import ProductSearchModal from '../components/products/ProductSearchModal';
 import ProductEditModal from '../components/products/ProductEditModal';
 import { ShareModal } from '../components/common/ShareModal';
+import { QuantityControls } from '../components/common/QuantityControls';
 import { useListHistory } from '../hooks/useListHistory';
 import { exportToPDF } from '../utils/exportPDF';
 import { exportToExcel } from '../utils/exportExcel';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { PremiumGate } from '../features/auth/components/PremiumGate';
+import { toast } from 'sonner';
 
 interface ResultsPageProps {
   resultado: {
@@ -159,6 +161,51 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
       newChecked.add(productId);
     }
     setCheckedProducts(newChecked);
+  };
+
+  // ================================================================
+  // NUEVAS FUNCIONES SPRINT 4: Edición Inline de Cantidades
+  // ================================================================
+
+  /**
+   * Incrementar cantidad de un producto
+   */
+  const handleIncrementQuantity = (productId: number) => {
+    setProductosLista(prev => prev.map(p => 
+      p.id_producto === productId 
+        ? { ...p, cantidad: Math.min(p.cantidad + 1, 99) }
+        : p
+    ));
+    toast.success('Cantidad actualizada', { duration: 1000 });
+  };
+
+  /**
+   * Decrementar cantidad de un producto (mínimo 1)
+   */
+  const handleDecrementQuantity = (productId: number) => {
+    setProductosLista(prev => prev.map(p => 
+      p.id_producto === productId 
+        ? { ...p, cantidad: Math.max(p.cantidad - 1, 1) }
+        : p
+    ));
+    toast.success('Cantidad actualizada', { duration: 1000 });
+  };
+
+  /**
+   * Eliminar producto de la lista (confirmación rápida)
+   */
+  const handleRemoveProduct = (productId: number, productName: string) => {
+    setProductosLista(prev => prev.filter(p => p.id_producto !== productId));
+    // Remover del checklist también
+    setCheckedProducts(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(productId);
+      return newSet;
+    });
+    toast.info(`${productName} eliminado de la lista`, {
+      duration: 2000,
+      icon: '🗑️'
+    });
   };
 
   // Funciones para edición de productos
@@ -505,46 +552,32 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                             }`}>
                               {producto.nombre}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Cantidad: {producto.cantidad}
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {producto.precio_unitario.toFixed(2)}€/ud
+                              </p>
                               {producto.esencial && (
-                                <span className="ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs rounded-full">
+                                <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs rounded-full">
                                   Esencial
                                 </span>
                               )}
-                            </p>
+                            </div>
                           </div>
 
-                          <div className="text-right">
-                            <p className="font-semibold text-gray-900 dark:text-white">
-                              {(producto.cantidad * producto.precio_unitario).toFixed(2)}€
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {producto.cantidad} × {producto.precio_unitario.toFixed(2)}€
-                            </p>
-                          </div>
-
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditProduct(producto);
-                              }}
-                              className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
-                              title="Editar producto"
-                            >
-                              <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteProduct(producto.id_producto);
-                              }}
-                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                              title="Eliminar producto"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                            </button>
+                          {/* Controles de cantidad inline */}
+                          <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                            <QuantityControls
+                              quantity={producto.cantidad}
+                              onIncrement={() => handleIncrementQuantity(producto.id_producto)}
+                              onDecrement={() => handleDecrementQuantity(producto.id_producto)}
+                              onRemove={() => handleRemoveProduct(producto.id_producto, producto.nombre)}
+                              size="sm"
+                            />
+                            <div className="text-right min-w-[4rem]">
+                              <p className="font-semibold text-gray-900 dark:text-white">
+                                {(producto.cantidad * producto.precio_unitario).toFixed(2)}€
+                              </p>
+                            </div>
                           </div>
                         </div>
                       ))}
