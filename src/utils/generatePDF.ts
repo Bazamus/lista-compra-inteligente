@@ -57,32 +57,37 @@ export const generatePDF = ({
   doc.setFillColor(41, 128, 185); // Azul oscuro
   doc.rect(0, 33, pageWidth, 5, 'F');
 
-  // Logo emoji
-  doc.setFontSize(22);
-  doc.text('🛒', 12, 22);
+  // Icono de carrito (texto simple en lugar de emoji)
+  doc.setFillColor(255, 255, 255);
+  doc.circle(18, 18, 6, 'F'); // Círculo blanco
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(52, 152, 219); // Azul
+  doc.text('$', 15, 21); // Símbolo de carrito simplificado
 
   // Título de la lista (blanco)
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
   const tituloLista = lista.nombre_lista || 'Lista de Compra';
-  doc.text(tituloLista, 28, 20);
+  doc.text(tituloLista, 30, 20);
   
-  // Metadata con iconos
+  // Metadata SIN emojis - solo texto
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(236, 240, 241); // Gris muy claro
   let metaY = 28;
+  let metaX = 30;
+  
   if (lista.num_personas) {
-    doc.text(`👥 ${lista.num_personas} personas`, 28, metaY);
+    doc.text(`Personas: ${lista.num_personas}`, metaX, metaY);
+    metaX += 35;
   }
   if (lista.dias_duracion) {
-    doc.text(`📅 ${lista.dias_duracion} días`, lista.num_personas ? 58 : 28, metaY);
+    doc.text(`Duracion: ${lista.dias_duracion} dias`, metaX, metaY);
+    metaX += 40;
   }
-  doc.text(`🗓️ ${new Date().toLocaleDateString('es-ES')}`, 
-    (lista.num_personas && lista.dias_duracion) ? 85 : (lista.num_personas || lista.dias_duracion) ? 58 : 28, 
-    metaY
-  );
+  doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, metaX, metaY);
 
   // "ListaGPT" marca en la esquina
   doc.setFontSize(10);
@@ -120,15 +125,14 @@ export const generatePDF = ({
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(52, 73, 94); // Gris oscuro
-    doc.text(`${categoria}`, 14, yPosition);
+    const categoriaTexto = `${categoria}`;
+    doc.text(categoriaTexto, 14, yPosition);
     
-    // Contador de productos
+    // Contador de productos con espacio
     doc.setFontSize(9);
     doc.setTextColor(127, 140, 141); // Gris medio
-    doc.text(`(${items.length} producto${items.length > 1 ? 's' : ''})`, 
-      14 + doc.getTextWidth(categoria) + 3, 
-      yPosition
-    );
+    const contadorTexto = ` (${items.length} producto${items.length > 1 ? 's' : ''})`;
+    doc.text(contadorTexto, 14 + doc.getTextWidth(categoriaTexto) + 2, yPosition);
     
     yPosition += 5;
 
@@ -137,7 +141,7 @@ export const generatePDF = ({
     items.forEach((producto) => {
       // Fila principal del producto
       const row: any[] = [
-        '☐', // Checkbox
+        '[ ]', // Checkbox simple sin emoji
         producto.nombre,
         producto.cantidad.toString(),
       ];
@@ -153,7 +157,7 @@ export const generatePDF = ({
       if (producto.nota) {
         const noteRow: any[] = [
           '', // Sin checkbox
-          `  📝 ${producto.nota}`,
+          `  Nota: ${producto.nota}`, // Sin emoji
           '', // Sin cantidad
         ];
         
@@ -203,8 +207,8 @@ export const generatePDF = ({
       },
       margin: { left: 12, right: 12 },
       didParseCell: (data: any) => {
-        // Estilo especial para filas de notas (contienen 📝)
-        if (data.cell.text[0]?.includes('📝')) {
+        // Estilo especial para filas de notas (contienen "Nota:")
+        if (data.cell.text[0]?.includes('Nota:')) {
           data.cell.styles.textColor = [52, 152, 219]; // Azul
           data.cell.styles.fontStyle = 'italic';
           data.cell.styles.fontSize = 7;
@@ -270,7 +274,7 @@ export const generatePDF = ({
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text('📅 Menú Semanal', 14, 20);
+    doc.text('Menu Semanal', 14, 20);
 
     yPosition = 40;
 
@@ -282,7 +286,7 @@ export const generatePDF = ({
 
       // Día de la semana con fondo
       const diaTexto = dia.replace('dia_', '');
-      const diaNombre = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][parseInt(diaTexto) - 1] || `Día ${diaTexto}`;
+      const diaNombre = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'][parseInt(diaTexto) - 1] || `Dia ${diaTexto}`;
       
       doc.setFillColor(241, 196, 15); // Amarillo
       doc.rect(12, yPosition - 5, pageWidth - 24, 8, 'F');
@@ -299,21 +303,21 @@ export const generatePDF = ({
 
       if (menu.desayuno) {
         doc.setFont('helvetica', 'bold');
-        doc.text('☕ Desayuno:', 20, yPosition);
+        doc.text('Desayuno:', 20, yPosition);
         doc.setFont('helvetica', 'normal');
         doc.text(menu.desayuno, 45, yPosition);
         yPosition += 5;
       }
       if (menu.comida) {
         doc.setFont('helvetica', 'bold');
-        doc.text('🍽️  Comida:', 20, yPosition);
+        doc.text('Comida:', 20, yPosition);
         doc.setFont('helvetica', 'normal');
         doc.text(menu.comida, 45, yPosition);
         yPosition += 5;
       }
       if (menu.cena) {
         doc.setFont('helvetica', 'bold');
-        doc.text('🌙 Cena:', 20, yPosition);
+        doc.text('Cena:', 20, yPosition);
         doc.setFont('helvetica', 'normal');
         doc.text(menu.cena, 45, yPosition);
         yPosition += 5;
