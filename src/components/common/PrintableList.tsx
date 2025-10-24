@@ -12,6 +12,7 @@ interface PrintableListProps {
     cantidad: number;
     precio_unitario: number;
     categoria: string;
+    nota?: string;
   }>;
   menus?: Record<string, any>;
   includeMenus?: boolean;

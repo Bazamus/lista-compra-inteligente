@@ -158,8 +158,8 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const handleSaveNote = (nota: string) => {
     if (!productoConNota) return;
 
-    setProductos(prevProductos =>
-      prevProductos.map(p =>
+    setProductosLista((prevProductos: any[]) =>
+      prevProductos.map((p: any) =>
         p.id_producto === productoConNota.id_producto
           ? { ...p, nota: nota || undefined }
           : p
@@ -206,12 +206,12 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
    * Imprimir con react-to-print
    */
   const handlePrint = useReactToPrint({
-    content: () => printableRef.current,
+    contentRef: printableRef,
     documentTitle: lista.nombre_lista || 'Lista de Compra',
     onAfterPrint: () => toast.success('Lista lista para imprimir', { icon: '🖨️' }),
   });
 
-  const handlePrintWithOptions = (options: ExportOptions) => {
+  const handlePrintWithOptions = (_options: ExportOptions) => {
     // Las opciones se aplican al componente PrintableList via props
     handlePrint();
   };
@@ -237,19 +237,19 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   /**
    * Exportar PDF legacy (mantener para compatibilidad)
    */
-  const handleExportPDFLegacy = () => {
-    try {
-      const datosExportar = {
-        ...resultado,
-        productos: productosLista,
-      };
-      exportToPDF(datosExportar);
-      setShowExportMenu(false);
-    } catch (error) {
-      console.error('Error al exportar PDF:', error);
-      alert('No se pudo exportar a PDF');
-    }
-  };
+  // const handleExportPDFLegacy = () => {
+  //   try {
+  //     const datosExportar = {
+  //       ...resultado,
+  //       productos: productosLista,
+  //     };
+  //     exportToPDF(datosExportar);
+  //     setShowExportMenu(false);
+  //   } catch (error) {
+  //     console.error('Error al exportar PDF:', error);
+  //     alert('No se pudo exportar a PDF');
+  //   }
+  // };
 
   const toggleProduct = (productId: number) => {
     const newChecked = new Set(checkedProducts);

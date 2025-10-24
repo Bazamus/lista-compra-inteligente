@@ -23,6 +23,7 @@ interface GeneratePDFOptions {
     cantidad: number;
     precio_unitario: number;
     categoria: string;
+    nota?: string;
   }>;
   menus?: Record<string, any>;
   includeMenus?: boolean;
@@ -76,7 +77,7 @@ export const generatePDF = ({
   }, {} as Record<string, typeof productos>);
 
   // Tabla de productos por categoría
-  Object.entries(groupedProducts).forEach(([categoria, items], index) => {
+  Object.entries(groupedProducts).forEach(([categoria, items]) => {
     // Verificar si necesitamos nueva página
     if (yPosition > 250) {
       doc.addPage();
