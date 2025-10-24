@@ -618,56 +618,61 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                       {items.map((producto: any) => (
                         <div
                           key={producto.id_producto}
-                          className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50
-                                   rounded-xl transition-colors group"
+                          className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors group"
                         >
-                          <div 
-                            className="flex-shrink-0 cursor-pointer"
-                            onClick={() => toggleProduct(producto.id_producto)}
-                          >
-                            {checkedProducts.has(producto.id_producto) ? (
-                              <CheckCircle className="w-6 h-6 text-green-500" />
-                            ) : (
-                              <Circle className="w-6 h-6 text-gray-300 dark:text-gray-600 group-hover:text-gray-400" />
-                            )}
-                          </div>
+                          {/* Layout responsive: columna en móvil, fila en desktop */}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            {/* Fila superior: Checkbox + Info */}
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div 
+                                className="flex-shrink-0 cursor-pointer"
+                                onClick={() => toggleProduct(producto.id_producto)}
+                              >
+                                {checkedProducts.has(producto.id_producto) ? (
+                                  <CheckCircle className="w-6 h-6 text-green-500" />
+                                ) : (
+                                  <Circle className="w-6 h-6 text-gray-300 dark:text-gray-600 group-hover:text-gray-400" />
+                                )}
+                              </div>
 
-                          <div 
-                            className="flex-1 min-w-0 cursor-pointer"
-                            onClick={() => toggleProduct(producto.id_producto)}
-                          >
-                            <p className={`font-medium ${
-                              checkedProducts.has(producto.id_producto)
-                                ? 'line-through text-gray-400 dark:text-gray-500'
-                                : 'text-gray-900 dark:text-white'
-                            }`}>
-                              {producto.nombre}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {producto.precio_unitario.toFixed(2)}€/ud
-                              </p>
-                              {producto.esencial && (
-                                <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs rounded-full">
-                                  Esencial
-                                </span>
-                              )}
+                              <div 
+                                className="flex-1 min-w-0 cursor-pointer"
+                                onClick={() => toggleProduct(producto.id_producto)}
+                              >
+                                <p className={`font-medium text-sm sm:text-base ${
+                                  checkedProducts.has(producto.id_producto)
+                                    ? 'line-through text-gray-400 dark:text-gray-500'
+                                    : 'text-gray-900 dark:text-white'
+                                }`}>
+                                  {producto.nombre}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                    {producto.precio_unitario.toFixed(2)}€/ud
+                                  </p>
+                                  {producto.esencial && (
+                                    <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs rounded-full">
+                                      Esencial
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Controles de cantidad inline */}
-                          <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-                            <QuantityControls
-                              quantity={producto.cantidad}
-                              onIncrement={() => handleIncrementQuantity(producto.id_producto)}
-                              onDecrement={() => handleDecrementQuantity(producto.id_producto)}
-                              onRemove={() => handleRemoveProduct(producto.id_producto, producto.nombre)}
-                              size="sm"
-                            />
-                            <div className="text-right min-w-[4rem]">
-                              <p className="font-semibold text-gray-900 dark:text-white">
-                                {(producto.cantidad * producto.precio_unitario).toFixed(2)}€
-                              </p>
+                            {/* Fila inferior/derecha: Controles + Precio */}
+                            <div className="flex items-center justify-between sm:justify-end gap-3 pl-10 sm:pl-0" onClick={(e) => e.stopPropagation()}>
+                              <QuantityControls
+                                quantity={producto.cantidad}
+                                onIncrement={() => handleIncrementQuantity(producto.id_producto)}
+                                onDecrement={() => handleDecrementQuantity(producto.id_producto)}
+                                onRemove={() => handleRemoveProduct(producto.id_producto, producto.nombre)}
+                                size="sm"
+                              />
+                              <div className="text-right min-w-[4rem]">
+                                <p className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
+                                  {(producto.cantidad * producto.precio_unitario).toFixed(2)}€
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
