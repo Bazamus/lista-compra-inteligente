@@ -3,13 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Calendar, Users, Euro, TrendingDown, Sparkles,
   CheckCircle, Circle, Download, Share2, Home, ChevronDown,
-  ChevronUp, Package, Utensils, Plus, Save, Check
+  ChevronUp, Package, Utensils, Plus, Save, Check, GripVertical,
+  List, RotateCcw
 } from 'lucide-react';
 import ProductSearchModal from '../components/products/ProductSearchModal';
 import ProductEditModal from '../components/products/ProductEditModal';
 import { ShareModal } from '../components/common/ShareModal';
 import { QuantityControls } from '../components/common/QuantityControls';
+import { DraggableProductList } from '../components/common/DraggableProductList';
 import { useListHistory } from '../hooks/useListHistory';
+import { useDragAndDrop } from '../hooks/useDragAndDrop';
 import { exportToPDF } from '../utils/exportPDF';
 import { exportToExcel } from '../utils/exportExcel';
 import { useAuth } from '../features/auth/hooks/useAuth';
@@ -49,10 +52,12 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const [listaSaved, setListaSaved] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [useDraggableView, setUseDraggableView] = useState(false); // Vista drag & drop
 
   const { lista, menus, recomendaciones } = resultado;
   const { saveList } = useListHistory();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { sortProducts, reorderProducts, hasCustomOrder, resetOrder } = useDragAndDrop(user?.id || null);
 
   // Cerrar menú de exportación al hacer clic fuera
   useEffect(() => {
@@ -206,6 +211,28 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
       duration: 2000,
       icon: '🗑️'
     });
+  };
+
+  /**
+   * Manejar reorden de productos (Drag & Drop)
+   */
+  const handleReorderProducts = (reorderedProducts: typeof productosLista) => {
+    setProductosLista(reorderedProducts);
+    reorderProducts(reorderedProducts);
+    toast.success('Orden actualizado', { duration: 1000 });
+  };
+
+  /**
+   * Resetear orden a categorías por defecto
+   */
+  const handleResetOrder = () => {
+    resetOrder();
+    // Re-agrupar por categorías
+    const sortedByCategory = [...productosLista].sort((a, b) => 
+      a.categoria.localeCompare(b.categoria)
+    );
+    setProductosLista(sortedByCategory);
+    toast.info('Orden restaurado a categorías', { duration: 2000 });
   };
 
   // Funciones para edición de productos
@@ -506,8 +533,65 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                 </div>
               </div>
 
-              {/* Productos agrupados por categoría */}
-              <div className="space-y-4">
+              {/* Toggle vista y botón reset orden */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setUseDraggableView(!useDraggableView)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                      useDraggableView
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                    title={useDraggableView ? 'Vista por categorías' : 'Activar reordenamiento'}
+                  >
+                    {useDraggableView ? (
+                      <>
+                        <GripVertical className="w-4 h-4" />
+                        <span className="text-sm font-medium">Modo Reordenar</span>
+                      </>
+                    ) : (
+                      <>
+                        <List className="w-4 h-4" />
+                        <span className="text-sm font-medium">Vista Categorías</span>
+                      </>
+                    )}
+                  </button>
+
+                  {hasCustomOrder && useDraggableView && (
+                    <button
+                      onClick={handleResetOrder}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all"
+                      title="Restaurar orden por categorías"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span className="text-sm font-medium hidden sm:inline">Restaurar Orden</span>
+                    </button>
+                  )}
+                </div>
+
+                {useDraggableView && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    💡 Arrastra los productos para organizarlos a tu gusto
+                  </p>
+                )}
+              </div>
+
+              {/* Productos: Vista por categorías o lista draggable */}
+              {useDraggableView ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+                  <DraggableProductList
+                    productos={sortProducts(productosLista)}
+                    checkedProducts={checkedProducts}
+                    onToggleProduct={toggleProduct}
+                    onReorder={handleReorderProducts}
+                    onIncrement={handleIncrementQuantity}
+                    onDecrement={handleDecrementQuantity}
+                    onRemove={handleRemoveProduct}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4">
                 {Object.entries(groupedProducts).map(([categoria, items]: [string, any], index) => (
                   <motion.div
                     key={categoria}
@@ -585,7 +669,8 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                     </div>
                   </motion.div>
                 ))}
-              </div>
+                </div>
+              )}
             </motion.div>
           </div>
 
