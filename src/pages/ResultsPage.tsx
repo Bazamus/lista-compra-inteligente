@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Calendar, Users, Euro, TrendingDown, Sparkles,
   CheckCircle, Circle, Download, Share2, Home, ChevronDown,
-  ChevronUp, Package, Utensils, Plus, Edit3, Trash2, Save, Check
+  ChevronUp, Package, Utensils, Plus, Save, Check
 } from 'lucide-react';
 import ProductSearchModal from '../components/products/ProductSearchModal';
 import ProductEditModal from '../components/products/ProductEditModal';
@@ -222,10 +222,11 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
     setProductosLista(prev => [...prev, nuevoProducto]);
   };
 
-  const handleEditProduct = (producto: any) => {
-    setProductoEditando(producto);
-    setShowEditModal(true);
-  };
+  // ✅ DEPRECADO: Reemplazado por QuantityControls inline
+  // const handleEditProduct = (producto: any) => {
+  //   setProductoEditando(producto);
+  //   setShowEditModal(true);
+  // };
 
   const handleSaveProduct = (producto: any, nuevaCantidad: number) => {
     setProductosLista(prev => 
