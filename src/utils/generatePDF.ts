@@ -106,7 +106,7 @@ export const generatePDF = ({
   }, {} as Record<string, typeof productos>);
 
   // Renderizar cada categoría
-  Object.entries(groupedProducts).forEach(([categoria, items], index) => {
+  Object.entries(groupedProducts).forEach(([categoria, items]) => {
     // Verificar si necesitamos nueva página
     if (yPosition > 245) {
       doc.addPage();
