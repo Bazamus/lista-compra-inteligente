@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
 /**
  * Hook para gestionar el estado de drag and drop de productos
@@ -51,8 +51,8 @@ export const useDragAndDrop = (userId: string | null) => {
    * Actualizar orden después de un drag & drop
    */
   const updateOrder = useCallback((productId: number, newIndex: number) => {
-    setProductOrder(prev => {
-      const newOrder = new Map(prev);
+    setProductOrder(prevOrder => {
+      const newOrder = new Map(prevOrder);
       newOrder.set(productId, newIndex);
       saveOrder(newOrder);
       return newOrder;
