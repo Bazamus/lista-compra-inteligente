@@ -230,11 +230,8 @@ async function handleCreateShare(
     console.log('✅ Share creado:', share.id);
 
     // 5. Generar URL pública
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : req.headers.host 
-        ? `https://${req.headers.host}`
-        : 'https://www.listagpt.com';
+    // Siempre usar el dominio personalizado
+    const baseUrl = 'https://www.listagpt.com';
     
     const shareUrl = `${baseUrl}/shared/${shareToken}`;
 
