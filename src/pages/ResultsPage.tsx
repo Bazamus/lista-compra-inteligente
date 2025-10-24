@@ -17,7 +17,6 @@ import { PrintableList } from '../components/common/PrintableList';
 import { ProductNoteModal } from '../components/common/ProductNoteModal';
 import { useListHistory } from '../hooks/useListHistory';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
-import { exportToPDF } from '../utils/exportPDF';
 import { exportToExcel } from '../utils/exportExcel';
 import { generatePDF } from '../utils/generatePDF';
 import { useReactToPrint } from 'react-to-print';
