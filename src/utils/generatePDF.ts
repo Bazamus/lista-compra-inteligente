@@ -31,7 +31,7 @@ interface GeneratePDFOptions {
 }
 
 /**
- * Genera un PDF de la lista de compra con jsPDF
+ * Genera un PDF de la lista de compra con diseño mejorado
  */
 export const generatePDF = ({
   lista,
@@ -42,30 +42,59 @@ export const generatePDF = ({
 }: GeneratePDFOptions): void => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
-  let yPosition = 20;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let yPosition = 15;
 
-  // Header
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text(lista.nombre_lista || 'Lista de Compra', 14, yPosition);
-
-  // Logo/Marca
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('ListaGPT', pageWidth - 14, yPosition, { align: 'right' });
-
-  yPosition += 10;
-
-  // Información general
-  doc.setFontSize(10);
-  let infoText = '';
-  if (lista.num_personas) infoText += `Personas: ${lista.num_personas}  `;
-  if (lista.dias_duracion) infoText += `Duración: ${lista.dias_duracion} días  `;
-  infoText += `Fecha: ${new Date().toLocaleDateString('es-ES')}`;
+  // ========================================
+  // HEADER CON BANNER COLORIDO
+  // ========================================
   
-  doc.text(infoText, 14, yPosition);
-  yPosition += 15;
+  // Banner superior azul
+  doc.setFillColor(52, 152, 219); // Azul vibrante
+  doc.rect(0, 0, pageWidth, 38, 'F');
+  
+  // Franja decorativa
+  doc.setFillColor(41, 128, 185); // Azul oscuro
+  doc.rect(0, 33, pageWidth, 5, 'F');
 
+  // Logo emoji
+  doc.setFontSize(22);
+  doc.text('🛒', 12, 22);
+
+  // Título de la lista (blanco)
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  const tituloLista = lista.nombre_lista || 'Lista de Compra';
+  doc.text(tituloLista, 28, 20);
+  
+  // Metadata con iconos
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(236, 240, 241); // Gris muy claro
+  let metaY = 28;
+  if (lista.num_personas) {
+    doc.text(`👥 ${lista.num_personas} personas`, 28, metaY);
+  }
+  if (lista.dias_duracion) {
+    doc.text(`📅 ${lista.dias_duracion} días`, lista.num_personas ? 58 : 28, metaY);
+  }
+  doc.text(`🗓️ ${new Date().toLocaleDateString('es-ES')}`, 
+    (lista.num_personas && lista.dias_duracion) ? 85 : (lista.num_personas || lista.dias_duracion) ? 58 : 28, 
+    metaY
+  );
+
+  // "ListaGPT" marca en la esquina
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ListaGPT', pageWidth - 14, 22, { align: 'right' });
+  
+  yPosition = 48; // Empezar después del banner
+
+  // ========================================
+  // PRODUCTOS POR CATEGORÍA
+  // ========================================
+  
   // Agrupar productos por categoría
   const groupedProducts = productos.reduce((acc, producto) => {
     const categoria = producto.categoria || 'Sin categoría';
@@ -76,21 +105,34 @@ export const generatePDF = ({
     return acc;
   }, {} as Record<string, typeof productos>);
 
-  // Tabla de productos por categoría
-  Object.entries(groupedProducts).forEach(([categoria, items]) => {
+  // Renderizar cada categoría
+  Object.entries(groupedProducts).forEach(([categoria, items], index) => {
     // Verificar si necesitamos nueva página
-    if (yPosition > 250) {
+    if (yPosition > 245) {
       doc.addPage();
       yPosition = 20;
     }
 
-    // Header de categoría
-    doc.setFontSize(12);
+    // Header de categoría con fondo gris claro
+    doc.setFillColor(236, 240, 241); // Gris muy claro
+    doc.rect(10, yPosition - 5, pageWidth - 20, 8, 'F');
+    
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${categoria} (${items.length} productos)`, 14, yPosition);
-    yPosition += 7;
+    doc.setTextColor(52, 73, 94); // Gris oscuro
+    doc.text(`${categoria}`, 14, yPosition);
+    
+    // Contador de productos
+    doc.setFontSize(9);
+    doc.setTextColor(127, 140, 141); // Gris medio
+    doc.text(`(${items.length} producto${items.length > 1 ? 's' : ''})`, 
+      14 + doc.getTextWidth(categoria) + 3, 
+      yPosition
+    );
+    
+    yPosition += 5;
 
-    // Preparar datos para autoTable
+    // Preparar datos para la tabla
     const tableData: any[] = [];
     items.forEach((producto) => {
       // Fila principal del producto
@@ -107,11 +149,11 @@ export const generatePDF = ({
 
       tableData.push(row);
 
-      // Si tiene nota, agregar fila adicional
+      // Si tiene nota, agregar fila de nota
       if (producto.nota) {
         const noteRow: any[] = [
           '', // Sin checkbox
-          `📝 ${producto.nota}`,
+          `  📝 ${producto.nota}`,
           '', // Sin cantidad
         ];
         
@@ -124,40 +166,60 @@ export const generatePDF = ({
       }
     });
 
+    // Columnas de la tabla
     const columns = includePrices
-      ? ['', 'Producto', 'Cant.', 'Precio/ud', 'Total']
+      ? ['', 'Producto', 'Cant.', '€/ud', 'Total']
       : ['', 'Producto', 'Cant.'];
 
+    // Generar tabla con autoTable
     autoTable(doc, {
       startY: yPosition,
       head: [columns],
       body: tableData,
-      theme: 'striped',
+      theme: 'plain',
       headStyles: {
-        fillColor: [66, 66, 66],
-        fontSize: 10,
+        fillColor: [52, 152, 219], // Azul principal
+        textColor: [255, 255, 255], // Blanco
+        fontSize: 9,
         fontStyle: 'bold',
+        halign: 'left',
       },
       bodyStyles: {
-        fontSize: 9,
+        fontSize: 8,
+        textColor: [44, 62, 80], // Gris muy oscuro
+        cellPadding: 3,
+      },
+      alternateRowStyles: {
+        fillColor: [250, 250, 250], // Gris muy claro para filas alternas
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' }, // Checkbox
-        1: { cellWidth: includePrices ? 70 : 120 }, // Producto
-        2: { cellWidth: 20, halign: 'center' }, // Cantidad
+        0: { cellWidth: 8, halign: 'center' }, // Checkbox
+        1: { cellWidth: includePrices ? 75 : 130 }, // Producto
+        2: { cellWidth: 15, halign: 'center' }, // Cantidad
         ...(includePrices && {
-          3: { cellWidth: 25, halign: 'right' }, // Precio/ud
-          4: { cellWidth: 25, halign: 'right' }, // Total
+          3: { cellWidth: 20, halign: 'right' }, // Precio/ud
+          4: { cellWidth: 25, halign: 'right', fontStyle: 'bold' }, // Total
         }),
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 12, right: 12 },
+      didParseCell: (data: any) => {
+        // Estilo especial para filas de notas (contienen 📝)
+        if (data.cell.text[0]?.includes('📝')) {
+          data.cell.styles.textColor = [52, 152, 219]; // Azul
+          data.cell.styles.fontStyle = 'italic';
+          data.cell.styles.fontSize = 7;
+        }
+      },
     });
 
     yPosition = (doc as any).lastAutoTable?.finalY || yPosition + 10;
-    yPosition += 5; // Espacio entre categorías
+    yPosition += 8; // Espacio entre categorías
   });
 
-  // Total
+  // ========================================
+  // TOTAL CON DISEÑO MEJORADO
+  // ========================================
+  
   if (includePrices) {
     const total = productos.reduce(
       (sum, p) => sum + p.cantidad * p.precio_unitario,
@@ -165,82 +227,140 @@ export const generatePDF = ({
     );
 
     // Verificar espacio para el total
-    if (yPosition > 260) {
+    if (yPosition > 255) {
       doc.addPage();
       yPosition = 20;
     }
 
-    yPosition += 10;
-    doc.setFontSize(14);
+    yPosition += 5;
+    
+    // Caja de total con fondo verde
+    const boxHeight = 12;
+    const boxY = yPosition - 3;
+    doc.setFillColor(46, 204, 113); // Verde éxito
+    doc.roundedRect(pageWidth - 70, boxY, 58, boxHeight, 3, 3, 'F');
+    
+    // Texto "TOTAL ESTIMADO" en blanco
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL ESTIMADO:', pageWidth - 60, yPosition);
-    doc.text(`${total.toFixed(2)}€`, pageWidth - 14, yPosition, { align: 'right' });
+    doc.setTextColor(255, 255, 255);
+    doc.text('TOTAL ESTIMADO', pageWidth - 67, yPosition + 3);
+    
+    // Precio en grande
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`${total.toFixed(2)}€`, pageWidth - 14, yPosition + 3, { align: 'right' });
   }
 
-  // Menús (si se incluyen)
+  // ========================================
+  // MENÚ SEMANAL (SI SE INCLUYE)
+  // ========================================
+  
   if (includeMenus && menus && Object.keys(menus).length > 0) {
     doc.addPage();
-    yPosition = 20;
+    yPosition = 15;
 
-    doc.setFontSize(16);
+    // Banner del menú
+    doc.setFillColor(230, 126, 34); // Naranja
+    doc.rect(0, 0, pageWidth, 30, 'F');
+    
+    doc.setFillColor(211, 84, 0); // Naranja oscuro
+    doc.rect(0, 25, pageWidth, 5, 'F');
+
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('Menú Semanal', 14, yPosition);
-    yPosition += 10;
+    doc.setTextColor(255, 255, 255);
+    doc.text('📅 Menú Semanal', 14, 20);
+
+    yPosition = 40;
 
     Object.entries(menus).forEach(([dia, menu]: [string, any]) => {
-      if (yPosition > 270) {
+      if (yPosition > 265) {
         doc.addPage();
         yPosition = 20;
       }
 
-      doc.setFontSize(12);
+      // Día de la semana con fondo
+      const diaTexto = dia.replace('dia_', '');
+      const diaNombre = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][parseInt(diaTexto) - 1] || `Día ${diaTexto}`;
+      
+      doc.setFillColor(241, 196, 15); // Amarillo
+      doc.rect(12, yPosition - 5, pageWidth - 24, 8, 'F');
+      
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text(dia.replace('dia_', 'Día '), 14, yPosition);
-      yPosition += 7;
+      doc.setTextColor(44, 62, 80);
+      doc.text(diaNombre, 16, yPosition);
+      yPosition += 8;
 
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(52, 73, 94);
 
       if (menu.desayuno) {
-        doc.text(`Desayuno: ${menu.desayuno}`, 20, yPosition);
-        yPosition += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.text('☕ Desayuno:', 20, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(menu.desayuno, 45, yPosition);
+        yPosition += 5;
       }
       if (menu.comida) {
-        doc.text(`Comida: ${menu.comida}`, 20, yPosition);
-        yPosition += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.text('🍽️  Comida:', 20, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(menu.comida, 45, yPosition);
+        yPosition += 5;
       }
       if (menu.cena) {
-        doc.text(`Cena: ${menu.cena}`, 20, yPosition);
-        yPosition += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.text('🌙 Cena:', 20, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(menu.cena, 45, yPosition);
+        yPosition += 5;
       }
 
-      yPosition += 5; // Espacio entre días
+      yPosition += 7; // Espacio entre días
     });
   }
 
-  // Footer en todas las páginas
+  // ========================================
+  // FOOTER EN TODAS LAS PÁGINAS
+  // ========================================
+  
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+    
+    // Línea decorativa superior del footer
+    doc.setDrawColor(189, 195, 199); // Gris claro
+    doc.setLineWidth(0.5);
+    doc.line(14, pageHeight - 15, pageWidth - 14, pageHeight - 15);
+    
+    // Texto del footer
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(150);
+    doc.setTextColor(127, 140, 141);
     doc.text(
       'Generado con ListaGPT - www.listagpt.com',
       pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 10,
+      pageHeight - 10,
       { align: 'center' }
     );
+    
+    // Número de página
+    doc.setFontSize(7);
     doc.text(
       `Página ${i} de ${totalPages}`,
       pageWidth - 14,
-      doc.internal.pageSize.getHeight() - 10,
+      pageHeight - 10,
       { align: 'right' }
     );
   }
 
-  // Descargar PDF
-  const fileName = `${lista.nombre_lista || 'lista-compra'}_${new Date().toISOString().split('T')[0]}.pdf`;
+  // ========================================
+  // GUARDAR PDF
+  // ========================================
+  
+  const fileName = `${lista.nombre_lista?.replace(/\s+/g, '_') || 'Lista_de_Compra'}_ListaGPT.pdf`;
   doc.save(fileName);
 };
-
