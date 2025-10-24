@@ -11,6 +11,7 @@ import ProductEditModal from '../components/products/ProductEditModal';
 import { ShareModal } from '../components/common/ShareModal';
 import { QuantityControls } from '../components/common/QuantityControls';
 import { DraggableProductList } from '../components/common/DraggableProductList';
+import { WeeklyMenuCalendar } from '../components/common/WeeklyMenuCalendar';
 import { useListHistory } from '../hooks/useListHistory';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
 import { exportToPDF } from '../utils/exportPDF';
@@ -512,6 +513,11 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                   </button>
                 </div>
               </div>
+
+              {/* Menú Semanal */}
+              {menus && Object.keys(menus).length > 0 && (
+                <WeeklyMenuCalendar menus={menus} className="mb-6" />
+              )}
 
               {/* Barra de progreso */}
               <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700">
