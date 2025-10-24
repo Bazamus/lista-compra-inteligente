@@ -12,10 +12,14 @@ import { ShareModal } from '../components/common/ShareModal';
 import { QuantityControls } from '../components/common/QuantityControls';
 import { DraggableProductList } from '../components/common/DraggableProductList';
 import { WeeklyMenuCalendar } from '../components/common/WeeklyMenuCalendar';
+import { ExportOptionsModal, type ExportOptions } from '../components/common/ExportOptionsModal';
+import { PrintableList } from '../components/common/PrintableList';
 import { useListHistory } from '../hooks/useListHistory';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
 import { exportToPDF } from '../utils/exportPDF';
 import { exportToExcel } from '../utils/exportExcel';
+import { generatePDF } from '../utils/generatePDF';
+import { useReactToPrint } from 'react-to-print';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { PremiumGate } from '../features/auth/components/PremiumGate';
 import { toast } from 'sonner';
@@ -54,6 +58,8 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [useDraggableView, setUseDraggableView] = useState(false); // Vista drag & drop
+  const [showExportModal, setShowExportModal] = useState(false);
+  const printableRef = React.useRef<HTMLDivElement>(null);
 
   const { lista, menus, recomendaciones } = resultado;
   const { saveList } = useListHistory();
@@ -131,7 +137,70 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
     }
   };
 
-  const handleExportPDF = () => {
+  // ================================================================
+  // FUNCIONES SPRINT 4: Impresión y Exportación
+  // ================================================================
+
+  /**
+   * Generar PDF con jsPDF (nueva implementación)
+   */
+  const handleGeneratePDF = (options: ExportOptions) => {
+    try {
+      generatePDF({
+        lista: {
+          nombre_lista: lista.nombre_lista || 'Lista de Compra',
+          num_personas: lista.num_personas,
+          dias_duracion: lista.dias_duracion,
+          presupuesto_total: presupuestoActual,
+        },
+        productos: productosLista,
+        menus,
+        includePrices: options.includePrices,
+        includeMenus: options.includeMenus,
+      });
+      toast.success('PDF descargado correctamente', { icon: '📄' });
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      toast.error('Error al generar PDF');
+    }
+  };
+
+  /**
+   * Imprimir con react-to-print
+   */
+  const handlePrint = useReactToPrint({
+    content: () => printableRef.current,
+    documentTitle: lista.nombre_lista || 'Lista de Compra',
+    onAfterPrint: () => toast.success('Lista lista para imprimir', { icon: '🖨️' }),
+  });
+
+  const handlePrintWithOptions = (options: ExportOptions) => {
+    // Las opciones se aplican al componente PrintableList via props
+    handlePrint();
+  };
+
+  /**
+   * Exportar a Excel (mantener funcionalidad existente)
+   */
+  const handleExportExcel = () => {
+    try {
+      const datosExportar = {
+        ...resultado,
+        productos: productosLista,
+      };
+      exportToExcel(datosExportar);
+      setShowExportMenu(false);
+      toast.success('Excel descargado correctamente', { icon: '📊' });
+    } catch (error) {
+      console.error('Error al exportar Excel:', error);
+      toast.error('Error al exportar Excel');
+    }
+  };
+
+  /**
+   * Exportar PDF legacy (mantener para compatibilidad)
+   */
+  const handleExportPDFLegacy = () => {
     try {
       const datosExportar = {
         ...resultado,
@@ -142,20 +211,6 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
     } catch (error) {
       console.error('Error al exportar PDF:', error);
       alert('No se pudo exportar a PDF');
-    }
-  };
-
-  const handleExportExcel = () => {
-    try {
-      const datosExportar = {
-        ...resultado,
-        productos: productosLista,
-      };
-      exportToExcel(datosExportar);
-      setShowExportMenu(false);
-    } catch (error) {
-      console.error('Error al exportar Excel:', error);
-      alert('No se pudo exportar a Excel');
     }
   };
 
@@ -480,13 +535,16 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
                       {showExportMenu && (
                         <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-20">
                           <button
-                            onClick={handleExportPDF}
+                            onClick={() => {
+                              setShowExportModal(true);
+                              setShowExportMenu(false);
+                            }}
                             className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 rounded-t-lg"
                           >
                             <Download className="w-4 h-4 text-red-500" />
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-white text-sm">Exportar PDF</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Lista completa en PDF</p>
+                              <p className="font-medium text-gray-900 dark:text-white text-sm">Imprimir / PDF</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Configura opciones de exportación</p>
                             </div>
                           </button>
                           <button
@@ -818,6 +876,31 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ resultado, onBackToHome }) =>
         listaId={resultado.lista?.id_lista || ''}
         listaNombre={lista.nombre_lista || 'Mi lista'}
       />
+
+      {/* Modal de opciones de exportación/impresión */}
+      <ExportOptionsModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExportPDF={handleGeneratePDF}
+        onPrint={handlePrintWithOptions}
+      />
+
+      {/* Componente oculto para impresión */}
+      <div className="hidden">
+        <PrintableList
+          ref={printableRef}
+          lista={{
+            nombre_lista: lista.nombre_lista || 'Lista de Compra',
+            num_personas: lista.num_personas,
+            dias_duracion: lista.dias_duracion,
+            presupuesto_total: presupuestoActual,
+          }}
+          productos={productosLista}
+          menus={menus}
+          includePrices={true}
+          includeMenus={true}
+        />
+      </div>
     </div>
   );
 };
