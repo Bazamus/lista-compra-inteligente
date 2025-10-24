@@ -63,14 +63,12 @@ export const useDragAndDrop = (userId: string | null) => {
    * Reordenar múltiples productos (para cuando se mueve uno, hay que ajustar los demás)
    */
   const reorderProducts = useCallback((products: Array<{ id_producto: number }>) => {
-    setProductOrder(prev => {
-      const newOrder = new Map();
-      products.forEach((product, index) => {
-        newOrder.set(product.id_producto, index);
-      });
-      saveOrder(newOrder);
-      return newOrder;
+    const newOrder = new Map();
+    products.forEach((product, index) => {
+      newOrder.set(product.id_producto, index);
     });
+    saveOrder(newOrder);
+    setProductOrder(newOrder);
   }, [saveOrder]);
 
   /**
